@@ -1,4 +1,4 @@
-// popup.js - AURA AI v3.5.0
+// popup.js - AURA AI v3.5.1 (FIXED)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -11,14 +11,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const trainingManager = new TrainingManager();
     const modelManager = new AuraModelManager();
     
-    await aiClient.loadConfig();
-    await notesManager.loadNotes();
-    await trainingManager.loadTraining();
-    await modelManager.loadModels();
+    // Load all configs
+    try {
+        await aiClient.loadConfig();
+        await notesManager.loadNotes();
+        await trainingManager.loadTraining();
+        await modelManager.loadModels();
+        console.log('AURA AI Initialized');
+    } catch (e) {
+        console.error('Initialization Error:', e);
+    }
 
     // Initialize Three.js Effect
     if (typeof AuraOpeningEffect !== 'undefined') {
-        new AuraOpeningEffect(canvasContainer);
+        try {
+            new AuraOpeningEffect(canvasContainer);
+        } catch (e) {
+            console.error('Three.js Error:', e);
+        }
     }
 
     // Load existing messages
@@ -42,8 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 'leens': 'Analisar'
             };
             const label = actionLabels[pending.aura_pending_type] || pending.aura_pending_type;
-            const prompt = `Ação: ${label}\nTexto: ${pending.aura_pending_text}`;
-            userInput.value = prompt;
+            userInput.value = `Ação: ${label}\nTexto: ${pending.aura_pending_text}`;
             await chrome.storage.local.remove(['aura_pending_text', 'aura_pending_type']);
             handleSendMessage();
         }
@@ -89,8 +98,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         contentDiv.innerHTML = '<span class="aura-typing">...</span>';
 
         try {
+            // Ensure client is loaded with latest config
             await aiClient.loadConfig();
             
+            // If using a custom persona, temporarily override provider/model
             if (activePersona.id !== 'default') {
                 await aiClient.setProvider(activePersona.provider);
                 await aiClient.setModel(activePersona.model);
@@ -105,9 +116,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             });
 
-            messages.push({ role: 'user', content: text });
-            messages.push({ role: 'assistant', content: fullResponse });
-            await chrome.storage.local.set({ 'aura_chat_history': messages.slice(-20) });
+            // Save history (limit to last 20 messages)
+            const newHistory = [...messages, { role: 'user', content: text }, { role: 'assistant', content: fullResponse }];
+            await chrome.storage.local.set({ 'aura_chat_history': newHistory.slice(-20) });
 
         } catch (error) {
             contentDiv.textContent = `Erro: ${error.message}`;
@@ -131,14 +142,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         return msgDiv;
     }
 
-    // Navigation
-    document.getElementById('nav-settings').onclick = showSettings;
-    document.getElementById('nav-notes').onclick = showNotes;
-    document.getElementById('nav-training').onclick = showTraining;
-    document.getElementById('nav-chat').onclick = () => {
-        document.querySelectorAll('.aura-nav-item').forEach(i => i.classList.remove('active'));
-        document.getElementById('nav-chat').classList.add('active');
+    // Event Listeners
+    if (sendBtn) {
+        sendBtn.onclick = (e) => {
+            e.preventDefault();
+            handleSendMessage();
+        };
+    }
+
+    userInput.onkeydown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
     };
+
+    // Navigation
+    const navItems = {
+        'nav-settings': showSettings,
+        'nav-notes': showNotes,
+        'nav-training': showTraining,
+        'nav-chat': () => {
+            document.querySelectorAll('.aura-nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('nav-chat').classList.add('active');
+        }
+    };
+
+    Object.entries(navItems).forEach(([id, func]) => {
+        const el = document.getElementById(id);
+        if (el) el.onclick = (e) => {
+            e.preventDefault();
+            func();
+        };
+    });
 
     async function showSettings() {
         await aiClient.loadConfig();
@@ -166,13 +202,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <div class="aura-setting-item">
                         <label>API Key:</label>
-                        <input type="password" id="settings-provider-key" value="${provider.key}">
+                        <input type="password" id="settings-provider-key" value="${provider.key || ''}">
                     </div>
                     <div class="aura-setting-item">
                         <label>Modelo:</label>
                         <select id="settings-model-select">
                             ${provider.models.map(m => `<option value="${m}" ${m === model ? 'selected' : ''}>${m}</option>`).join('')}
-                            <option value="custom">Custom Model ID</option>
+                            <option value="custom" ${!provider.models.includes(model) ? 'selected' : ''}>Custom Model ID</option>
                         </select>
                     </div>
                     <div class="aura-setting-item" id="custom-model-container" style="display: ${provider.models.includes(model) ? 'none' : 'block'};">
