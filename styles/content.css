@@ -1,0 +1,66 @@
+/* content.css - Estilos injetados nas páginas pela AURA AI */
+
+.aura-floating-menu {
+    position: absolute;
+    z-index: 999999;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 6px;
+    display: flex;
+    gap: 4px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    animation: auraFadeIn 0.2s ease-out;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.aura-menu-btn {
+    background: transparent;
+    border: none;
+    color: #f8fafc;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.aura-menu-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    color: #8b5cf6;
+}
+
+@keyframes auraFadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Modal de Resultado Injetado */
+.aura-result-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 9999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aura-result-modal {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    width: 500px;
+    max-width: 90vw;
+    padding: 24px;
+    color: #f8fafc;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}

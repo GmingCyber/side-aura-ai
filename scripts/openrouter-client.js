@@ -1,21 +1,28 @@
 // openrouter-client.js
-class OpenRouterClient {
+class AuraAIClient {
     constructor() {
-        this.baseURL = 'https://openrouter.ai/api/v1';
-        this.apiKey = null;
-        this.currentModel = 'google/gemini-2.0-flash-exp:free'; // Default free model
+        this.providers = [];
+        this.currentProviderId = 'openrouter';
+        this.currentModel = 'google/gemini-2.0-flash-exp:free';
     }
 
-    async setApiKey(key) {
-        this.apiKey = key;
-        await chrome.storage.local.set({ 'aura_api_key': key });
+    async loadConfig() {
+        const result = await chrome.storage.local.get(['aura_providers', 'aura_current_provider', 'aura_current_model']);
+        this.providers = result.aura_providers || [
+            { id: 'openrouter', name: 'OpenRouter', url: 'https://openrouter.ai/api/v1', key: '' }
+        ];
+        this.currentProviderId = result.aura_current_provider || 'openrouter';
+        this.currentModel = result.aura_current_model || 'google/gemini-2.0-flash-exp:free';
     }
 
-    async getApiKey() {
-        if (this.apiKey) return this.apiKey;
-        const result = await chrome.storage.local.get(['aura_api_key']);
-        this.apiKey = result.aura_api_key;
-        return this.apiKey;
+    async saveProvider(provider) {
+        const index = this.providers.findIndex(p => p.id === provider.id);
+        if (index >= 0) {
+            this.providers[index] = provider;
+        } else {
+            this.providers.push(provider);
+        }
+        await chrome.storage.local.set({ 'aura_providers': this.providers });
     }
 
     async setModel(model) {
@@ -23,25 +30,30 @@ class OpenRouterClient {
         await chrome.storage.local.set({ 'aura_current_model': model });
     }
 
-    async getModel() {
-        const result = await chrome.storage.local.get(['aura_current_model']);
-        return result.aura_current_model || this.currentModel;
+    async setProvider(providerId) {
+        this.currentProviderId = providerId;
+        await chrome.storage.local.set({ 'aura_current_provider': providerId });
+    }
+
+    getProvider() {
+        return this.providers.find(p => p.id === this.currentProviderId) || this.providers[0];
     }
 
     async chat(messages, onStream = null) {
-        const apiKey = await this.getApiKey();
-        const model = await this.getModel();
+        await this.loadConfig();
+        const provider = this.getProvider();
+        const model = this.currentModel;
 
-        if (!apiKey) {
-            throw new Error('API Key não configurada. Vá em Configurações.');
+        if (!provider || !provider.key) {
+            throw new Error(`API Key não configurada para o provedor ${provider?.name || 'selecionado'}. Vá em Configurações.`);
         }
 
         try {
-            const response = await fetch(`${this.baseURL}/chat/completions`, {
+            const response = await fetch(`${provider.url}/chat/completions`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'HTTP-Referer': 'https://aura-ai-extension.com', // Required by OpenRouter
+                    'Authorization': `Bearer ${provider.key}`,
+                    'HTTP-Referer': 'https://aura-ai-extension.com',
                     'X-Title': 'AURA AI Extension',
                     'Content-Type': 'application/json'
                 },
@@ -54,7 +66,7 @@ class OpenRouterClient {
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error?.message || 'Erro na requisição ao OpenRouter');
+                throw new Error(error.error?.message || 'Erro na requisição ao provedor de IA');
             }
 
             if (onStream) {
@@ -91,7 +103,7 @@ class OpenRouterClient {
                 return data.choices[0].message.content;
             }
         } catch (error) {
-            console.error('OpenRouter Chat Error:', error);
+            console.error('AURA AI Chat Error:', error);
             throw error;
         }
     }

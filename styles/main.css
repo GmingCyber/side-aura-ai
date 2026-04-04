@@ -27,8 +27,8 @@ body {
     background-color: var(--aura-bg);
     color: var(--aura-text);
     overflow: hidden;
-    width: 420px;
-    height: 600px;
+    width: 100%; /* Adapt to Side Panel width */
+    height: 100vh;
 }
 
 .aura-container {
@@ -93,13 +93,14 @@ body {
 
 /* Three.js Canvas Area */
 .aura-visual-area {
-    height: 120px;
+    height: 140px;
     position: relative;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
+    background: radial-gradient(circle at center, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
 }
 
 #aura-canvas-container {
@@ -144,12 +145,13 @@ body {
 }
 
 .aura-message {
-    max-width: 85%;
+    max-width: 90%;
     padding: 12px 16px;
     border-radius: 12px;
     font-size: 14px;
     line-height: 1.5;
     position: relative;
+    animation: auraFadeIn 0.3s ease-out;
 }
 
 .aura-message-user {
@@ -206,7 +208,7 @@ body {
     padding: 8px;
     outline: none;
     resize: none;
-    max-height: 120px;
+    max-height: 150px;
 }
 
 .aura-send-btn {
