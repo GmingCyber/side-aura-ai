@@ -5,10 +5,10 @@ chrome.runtime.onInstalled.addListener((details) => {
             'aura_chat_history': [],
             'aura_current_model': 'google/gemini-2.0-flash-exp:free',
             'aura_providers': [
-                { id: 'openrouter', name: 'OpenRouter', url: 'https://openrouter.ai/api/v1', key: '' }
+                { id: 'openrouter', name: 'OpenRouter', url: 'https://openrouter.ai/api/v1', key: '', models: ['google/gemini-2.0-flash-exp:free', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o'] }
             ],
             'aura_notes': [],
-            'aura_training': []
+            'aura_training_v2': { text: [], files: [], sources: [] }
         });
         console.log('AURA AI Extension Installed');
     }
@@ -47,10 +47,15 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
 });
 
-// Listen for messages from content scripts
+// Listen for messages from content scripts (Floating Menu)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'processText') {
-        chrome.storage.local.set({ 'aura_pending_text': message.text, 'aura_pending_type': message.type });
-        chrome.sidePanel.open({ tabId: sender.tab.id });
+        console.log('Processing text from floating menu:', message.type);
+        chrome.storage.local.set({ 
+            'aura_pending_text': message.text, 
+            'aura_pending_type': message.type 
+        }, () => {
+            chrome.sidePanel.open({ tabId: sender.tab.id });
+        });
     }
 });

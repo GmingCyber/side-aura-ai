@@ -29,6 +29,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Check for pending actions from context menu or floating menu
+    async function checkPendingActions() {
+        const pending = await chrome.storage.local.get(['aura_pending_text', 'aura_pending_type']);
+        if (pending.aura_pending_text) {
+            const actionLabels = {
+                'improve': 'Melhorar',
+                'summarize': 'Resumir',
+                'shorten': 'Encurtar',
+                'chat': 'Chat',
+                'translate': 'Traduzir',
+                'leens': 'Analisar'
+            };
+            const label = actionLabels[pending.aura_pending_type] || pending.aura_pending_type;
+            const prompt = `Ação: ${label}\nTexto: ${pending.aura_pending_text}`;
+            userInput.value = prompt;
+            await chrome.storage.local.remove(['aura_pending_text', 'aura_pending_type']);
+            handleSendMessage();
+        }
+    }
+    
+    // Check immediately and also listen for storage changes
+    checkPendingActions();
+    chrome.storage.onChanged.addListener((changes) => {
+        if (changes.aura_pending_text) {
+            checkPendingActions();
+        }
+    });
+
     // Auto-resize textarea
     userInput.addEventListener('input', () => {
         userInput.style.height = 'auto';
@@ -70,14 +98,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             let fullResponse = '';
-            // Temporarily override client config with persona config
-            const originalProvider = aiClient.currentProviderId;
-            const originalModel = aiClient.currentModel;
+            
+            // Ensure client is loaded with latest config
+            await aiClient.loadConfig();
             
             if (activePersona.id !== 'default') {
                 await aiClient.setProvider(activePersona.provider);
                 await aiClient.setModel(activePersona.model);
-                // Ensure API key is set for this provider
                 const p = aiClient.providers.find(p => p.id === activePersona.provider);
                 if (p && activePersona.apiKey) p.key = activePersona.apiKey;
             }
@@ -145,7 +172,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await modelManager.loadModels();
         const provider = aiClient.getProvider();
         const model = aiClient.currentModel;
-        const activePersona = modelManager.getActiveModel();
         
         const settingsHtml = `
             <div class="aura-settings-overlay">
@@ -189,6 +215,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         div.innerHTML = settingsHtml;
         document.body.appendChild(div);
 
+        const providerSelect = document.getElementById('settings-provider-select');
+        
+        providerSelect.onchange = async () => {
+            const newProviderId = providerSelect.value;
+            await aiClient.setProvider(newProviderId);
+            // Refresh settings panel to show new provider's key/url
+            div.remove();
+            showSettings();
+        };
+        
         document.getElementById('settings-persona-select').onchange = async (e) => {
             if (e.target.value === 'new-persona') {
                 div.remove();
