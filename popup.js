@@ -121,9 +121,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (item.id === 'nav-settings') showSettings();
             if (item.id === 'nav-notes') showNotes();
             if (item.id === 'nav-training') showTraining();
-            if (item.id === 'nav-chat') {
-                // Refresh chat view if needed
-            }
         });
     });
 
@@ -140,7 +137,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <label>Provedor:</label>
                         <select id="settings-provider-select">
                             ${aiClient.providers.map(p => `<option value="${p.id}" ${p.id === aiClient.currentProviderId ? 'selected' : ''}>${p.name}</option>`).join('')}
-                            <option value="new">+ Adicionar Provedor</option>
                         </select>
                     </div>
                     <div id="provider-details">
@@ -154,7 +150,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>
                     <div class="aura-setting-item">
-                        <label>Modelo (ID):</label>
+                        <label>Modelo:</label>
+                        <select id="settings-model-select">
+                            ${provider.models.map(m => `<option value="${m}" ${m === model ? 'selected' : ''}>${m}</option>`).join('')}
+                            <option value="custom">Custom Model ID</option>
+                        </select>
+                    </div>
+                    <div class="aura-setting-item" id="custom-model-container" style="display: ${provider.models.includes(model) ? 'none' : 'block'};">
+                        <label>Custom Model ID:</label>
                         <input type="text" id="settings-model-id" value="${model}" placeholder="ex: anthropic/claude-3.5-sonnet">
                     </div>
                     <div class="aura-settings-actions">
@@ -168,16 +171,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         const div = document.createElement('div');
         div.innerHTML = settingsHtml;
         document.body.appendChild(div);
+
+        const providerSelect = document.getElementById('settings-provider-select');
+        const modelSelect = document.getElementById('settings-model-select');
+        const customModelContainer = document.getElementById('custom-model-container');
+
+        providerSelect.onchange = async () => {
+            const newProviderId = providerSelect.value;
+            await aiClient.setProvider(newProviderId);
+            div.remove();
+            showSettings();
+        };
+
+        modelSelect.onchange = () => {
+            if (modelSelect.value === 'custom') {
+                customModelContainer.style.display = 'block';
+            } else {
+                customModelContainer.style.display = 'none';
+            }
+        };
         
         document.getElementById('settings-save').onclick = async () => {
             const updatedProvider = {
                 id: aiClient.currentProviderId,
-                name: provider.name,
                 url: document.getElementById('settings-provider-url').value,
                 key: document.getElementById('settings-provider-key').value
             };
-            await aiClient.saveProvider(updatedProvider);
-            await aiClient.setModel(document.getElementById('settings-model-id').value);
+            await aiClient.saveProvider(aiClient.currentProviderId, updatedProvider);
+            
+            const finalModel = modelSelect.value === 'custom' ? document.getElementById('settings-model-id').value : modelSelect.value;
+            await aiClient.setModel(finalModel);
             div.remove();
         };
         
