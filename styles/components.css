@@ -27,6 +27,17 @@
     cursor: pointer;
     user-select: none;
     background: rgba(255, 255, 255, 0.02);
+    transition: all 0.5s ease;
+}
+
+.aura-thought-success {
+    background: rgba(124, 77, 255, 0.15) !important;
+    border-bottom: 1px solid rgba(124, 77, 255, 0.3);
+}
+
+.aura-thought-success .aura-thought-timer {
+    color: #b39ddb;
+    font-weight: 700;
 }
 
 .aura-thought-header:hover {
