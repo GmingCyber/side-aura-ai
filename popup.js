@@ -1,4 +1,4 @@
-// popup.js - AURA AI v4.0.0 (DIRECT QUOTE THINKING)
+// popup.js - AURA AI v5.0.0 (THOUGHT MODE O1 STYLE)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -140,13 +140,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             { role: 'user', content: fullPrompt }
         ];
 
-        // Advanced Thinking Mode Visual
+        // Advanced Thinking Mode Visual (O1 Style)
         const aiMsgDiv = appendMessage(activePersona.title, '', false);
         const contentDiv = aiMsgDiv.querySelector('.aura-message-content');
         
-        const thinkingContainer = document.createElement('div');
-        thinkingContainer.className = 'aura-advanced-thinking';
-        contentDiv.appendChild(thinkingContainer);
+        // Thought Container (Accordion)
+        const thoughtWrapper = document.createElement('div');
+        thoughtWrapper.className = 'aura-thought-wrapper';
+        
+        const thoughtHeader = document.createElement('div');
+        thoughtHeader.className = 'aura-thought-header';
+        thoughtHeader.innerHTML = `
+            <span class="aura-thought-icon">🧠</span>
+            <span class="aura-thought-timer">Pensando...</span>
+            <span class="aura-thought-toggle">▼</span>
+        `;
+        
+        const thoughtContent = document.createElement('div');
+        thoughtContent.className = 'aura-thought-content aura-hidden';
+        
+        thoughtWrapper.appendChild(thoughtHeader);
+        thoughtWrapper.appendChild(thoughtContent);
+        contentDiv.appendChild(thoughtWrapper);
+
+        // Toggle Accordion
+        thoughtHeader.onclick = () => {
+            thoughtContent.classList.toggle('aura-hidden');
+            thoughtHeader.querySelector('.aura-thought-toggle').textContent = thoughtContent.classList.contains('aura-hidden') ? '▼' : '▲';
+        };
 
         const addThinkingStep = (label, detail) => {
             const step = document.createElement('div');
@@ -158,15 +179,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
                 <div class="aura-step-detail">| ${detail}</div>
             `;
-            thinkingContainer.appendChild(step);
+            thoughtContent.appendChild(step);
             chatMessages.scrollTop = chatMessages.scrollHeight;
             return step;
         };
+
+        const startTime = Date.now();
+        const timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            thoughtHeader.querySelector('.aura-thought-timer').textContent = `Pensou por ${elapsed} segundo${elapsed !== 1 ? 's' : ''}`;
+        }, 1000);
 
         try {
             // Dynamic Thinking Step
             const dynamic = getDynamicThinking(text);
             
+            // Multimodal Check
+            const fileCount = trainingManager.categories.files.length;
+            const sourceCount = trainingManager.categories.sources.length;
+            if (fileCount > 0 || sourceCount > 0) {
+                addThinkingStep("Multimodal", `Consultando ${fileCount} arquivo(s) e ${sourceCount} fonte(s) de treinamento.`);
+                await new Promise(r => setTimeout(r, 600));
+            }
+
             const thinkingTitles = ["Thinking", "Pensando", "Processando", "Trabalhando"];
             const analyzingTitles = ["Analisando", "Estruturando", "Mapeando", "Contextualizando"];
             const planningTitles = ["Planejando", "Plano", "Estratégia", "Construindo"];
@@ -191,9 +226,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let fullResponse = '';
             await aiClient.chat(apiMessages, (chunk, full) => {
-                if (thinkingContainer) {
-                    thinkingContainer.style.opacity = '0.4';
-                    thinkingContainer.style.transform = 'scale(0.98)';
+                // Stop timer when streaming starts
+                clearInterval(timerInterval);
+                const finalElapsed = Math.floor((Date.now() - startTime) / 1000);
+                thoughtHeader.querySelector('.aura-thought-timer').textContent = `Pensou por ${finalElapsed} segundo${finalElapsed !== 1 ? 's' : ''}`;
+                
+                if (thoughtWrapper) {
+                    thoughtWrapper.style.opacity = '0.6';
                 }
                 fullResponse = full;
                 
@@ -211,7 +250,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             await chrome.storage.local.set({ 'aura_chat_history': newHistory.slice(-20) });
 
         } catch (error) {
-            if (thinkingContainer) thinkingContainer.remove();
+            clearInterval(timerInterval);
+            if (thoughtWrapper) thoughtWrapper.remove();
             contentDiv.textContent = `Erro: ${error.message}`;
             contentDiv.classList.add('aura-error');
         }

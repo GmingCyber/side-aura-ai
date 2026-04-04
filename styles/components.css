@@ -133,16 +133,60 @@
     min-height: 60px;
 }
 
-/* Advanced Thinking Mode v3.7.0 */
+/* Thought Mode v5.0.0 (o1 Style) */
+.aura-thought-wrapper {
+    margin-bottom: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.aura-thought-header {
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.aura-thought-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.aura-thought-icon {
+    font-size: 14px;
+}
+
+.aura-thought-timer {
+    font-size: 12px;
+    color: var(--aura-text-muted);
+    flex-grow: 1;
+    font-weight: 500;
+}
+
+.aura-thought-toggle {
+    font-size: 10px;
+    color: var(--aura-text-muted);
+}
+
+.aura-thought-content {
+    padding: 10px 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    animation: auraFadeIn 0.3s ease;
+}
+
+.aura-hidden {
+    display: none;
+}
+
 .aura-advanced-thinking {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border-left: 2px solid var(--aura-primary);
-    border-radius: 0 8px 8px 0;
-    margin-bottom: 15px;
     transition: all 0.3s ease;
 }
 
