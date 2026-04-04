@@ -1,4 +1,4 @@
-// content.js
+// content.js - AURA AI v3.6.0
 class AuraContent {
     constructor() {
         this.floatingMenu = null;
@@ -19,6 +19,7 @@ class AuraContent {
     }
 
     handleMouseDown(e) {
+        // If clicking outside the menu, remove it
         if (this.floatingMenu && !this.floatingMenu.contains(e.target)) {
             this.removeFloatingMenu();
         }
@@ -28,7 +29,8 @@ class AuraContent {
         const selection = window.getSelection();
         const text = selection.toString().trim();
 
-        if (text && text.length > 2) {
+        // Only show if text is selected and it's not inside our menu
+        if (text && text.length > 1 && (!this.floatingMenu || !this.floatingMenu.contains(e.target))) {
             this.selectedText = text;
             this.showFloatingMenu(e.pageX, e.pageY);
         }
@@ -39,21 +41,29 @@ class AuraContent {
 
         this.floatingMenu = document.createElement('div');
         this.floatingMenu.className = 'aura-floating-menu';
+        // Position slightly above the selection
         this.floatingMenu.style.left = `${x}px`;
         this.floatingMenu.style.top = `${y + 10}px`;
 
         const actions = [
-            { id: 'improve', label: '✨ Melhorar', icon: '🪄' },
-            { id: 'summarize', label: '📝 Resumir', icon: '📄' },
-            { id: 'translate', label: '🌐 Traduzir', icon: '🌍' },
-            { id: 'chat', label: '💬 Chat', icon: '🤖' }
+            { id: 'improve', label: 'Melhorar', icon: '✨' },
+            { id: 'summarize', label: 'Resumir', icon: '📝' },
+            { id: 'translate', label: 'Traduzir', icon: '🌐' },
+            { id: 'chat', label: 'Chat', icon: '💬' }
         ];
 
         actions.forEach(action => {
             const btn = document.createElement('button');
             btn.className = 'aura-menu-btn';
-            btn.innerHTML = `<span>${action.icon}</span> ${action.label}`;
-            btn.onclick = () => this.handleAction(action.id);
+            btn.innerHTML = `<span class="aura-btn-icon">${action.icon}</span> <span class="aura-btn-text">${action.label}</span>`;
+            
+            // Use mousedown to trigger before selection is lost
+            btn.onmousedown = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.handleAction(action.id);
+            };
+            
             this.floatingMenu.appendChild(btn);
         });
 
@@ -68,8 +78,7 @@ class AuraContent {
     }
 
     handleAction(actionId) {
-        console.log(`AURA Action: ${actionId} on text: ${this.selectedText}`);
-        // Open extension popup or send message to background
+        console.log(`AURA Action Triggered: ${actionId}`);
         chrome.runtime.sendMessage({ 
             action: 'processText', 
             type: actionId, 
@@ -79,44 +88,57 @@ class AuraContent {
     }
 }
 
-// Inject CSS for floating menu
+// Inject CSS for floating menu with premium look
 const style = document.createElement('style');
 style.textContent = `
     .aura-floating-menu {
         position: absolute;
-        z-index: 999999;
-        background: #1e293b;
+        z-index: 2147483647;
+        background: #0f172a;
         border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 6px;
+        border-radius: 10px;
+        padding: 4px;
         display: flex;
-        gap: 4px;
-        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4);
-        animation: auraFadeIn 0.2s ease-out;
+        gap: 2px;
+        box-shadow: 0 10px 30px -5px rgba(0,0,0,0.5), 0 0 15px rgba(99, 102, 241, 0.2);
+        animation: auraFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: auto;
+        user-select: none;
     }
     .aura-menu-btn {
         background: transparent;
         border: none;
-        color: #f8fafc;
+        color: #e2e8f0;
         padding: 6px 10px;
-        border-radius: 8px;
+        border-radius: 7px;
         cursor: pointer;
-        font-size: 13px;
+        font-size: 12px;
+        font-weight: 500;
         display: flex;
         align-items: center;
         gap: 6px;
         white-space: nowrap;
         transition: all 0.2s;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     .aura-menu-btn:hover {
-        background: rgba(99, 102, 241, 0.2);
-        color: #8b5cf6;
+        background: rgba(255, 255, 255, 0.1);
+        color: #818cf8;
+        transform: translateY(-1px);
+    }
+    .aura-btn-icon {
+        font-size: 14px;
     }
     @keyframes auraFadeIn {
-        from { opacity: 0; transform: translateY(5px); }
-        to { opacity: 1; transform: translateY(0); }
+        from { opacity: 0; transform: translateY(8px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
     }
 `;
 document.head.appendChild(style);
 
-new AuraContent();
+// Initialize
+if (window.auraContentInstance) {
+    // Clean up if already exists
+    window.auraContentInstance.removeFloatingMenu();
+}
+window.auraContentInstance = new AuraContent();

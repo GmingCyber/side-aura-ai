@@ -132,3 +132,39 @@
     resize: vertical;
     min-height: 60px;
 }
+
+/* Thinking & Building Mode */
+.aura-thinking-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 0;
+}
+
+.aura-thinking-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.aura-thinking-dots span {
+    width: 6px;
+    height: 6px;
+    background: var(--aura-primary);
+    border-radius: 50%;
+    animation: auraThinking 1.4s infinite ease-in-out both;
+}
+
+.aura-thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+.aura-thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+.aura-thinking-text {
+    font-size: 11px;
+    color: var(--aura-text-muted);
+    font-style: italic;
+    letter-spacing: 0.5px;
+}
+
+@keyframes auraThinking {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+    40% { transform: scale(1); opacity: 1; }
+}

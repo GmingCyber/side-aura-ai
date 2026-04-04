@@ -1,4 +1,4 @@
-// background.js
+// background.js - AURA AI v3.6.0
 chrome.runtime.onInstalled.addListener((details) => {
     if (details.reason === 'install') {
         chrome.storage.local.set({
@@ -50,12 +50,19 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Listen for messages from content scripts (Floating Menu)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'processText') {
-        console.log('Processing text from floating menu:', message.type);
+        console.log('AURA Background: Processing text from floating menu:', message.type);
+        
+        // Store pending action in storage
         chrome.storage.local.set({ 
             'aura_pending_text': message.text, 
             'aura_pending_type': message.type 
         }, () => {
-            chrome.sidePanel.open({ tabId: sender.tab.id });
+            // Open the side panel for the current tab
+            if (sender.tab && sender.tab.id) {
+                chrome.sidePanel.open({ tabId: sender.tab.id })
+                    .then(() => console.log('AURA Side Panel Opened'))
+                    .catch((err) => console.error('Error opening side panel:', err));
+            }
         });
     }
 });

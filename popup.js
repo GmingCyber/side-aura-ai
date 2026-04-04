@@ -1,4 +1,4 @@
-// popup.js - AURA AI v3.5.1 (FIXED)
+// popup.js - AURA AI v3.6.0
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -84,7 +84,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const trainingContext = trainingManager.getContextForPrompt();
         const activePersona = modelManager.getActiveModel();
-        const systemPrompt = `Você é ${activePersona.title}. ${activePersona.description}`;
+        
+        // Aura Leens Context
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const pageContext = tab ? `[CONTEXTO DA PÁGINA: ${tab.title} | URL: ${tab.url}]` : '';
+
+        const systemPrompt = `Você é ${activePersona.title}. ${activePersona.description}. ${pageContext}`;
         const fullPrompt = trainingContext ? `${trainingContext}\n\nPERGUNTA: ${text}` : text;
         
         const apiMessages = [
@@ -93,15 +98,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             { role: 'user', content: fullPrompt }
         ];
 
-        const aiMsgDiv = appendMessage(activePersona.title, 'Pensando...', false);
+        // Thinking & Building Mode Visual
+        const aiMsgDiv = appendMessage(activePersona.title, '', false);
         const contentDiv = aiMsgDiv.querySelector('.aura-message-content');
-        contentDiv.innerHTML = '<span class="aura-typing">...</span>';
+        
+        const thinkingIndicator = document.createElement('div');
+        thinkingIndicator.className = 'aura-thinking-mode';
+        thinkingIndicator.innerHTML = `
+            <div class="aura-thinking-dots">
+                <span></span><span></span><span></span>
+            </div>
+            <span class="aura-thinking-text">Thinking & Building Mode...</span>
+        `;
+        contentDiv.appendChild(thinkingIndicator);
 
         try {
-            // Ensure client is loaded with latest config
             await aiClient.loadConfig();
             
-            // If using a custom persona, temporarily override provider/model
             if (activePersona.id !== 'default') {
                 await aiClient.setProvider(activePersona.provider);
                 await aiClient.setModel(activePersona.model);
@@ -111,16 +124,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let fullResponse = '';
             await aiClient.chat(apiMessages, (chunk, full) => {
+                if (thinkingIndicator) thinkingIndicator.remove();
                 fullResponse = full;
                 contentDiv.textContent = full;
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             });
 
-            // Save history (limit to last 20 messages)
             const newHistory = [...messages, { role: 'user', content: text }, { role: 'assistant', content: fullResponse }];
             await chrome.storage.local.set({ 'aura_chat_history': newHistory.slice(-20) });
 
         } catch (error) {
+            if (thinkingIndicator) thinkingIndicator.remove();
             contentDiv.textContent = `Erro: ${error.message}`;
             contentDiv.classList.add('aura-error');
         }
