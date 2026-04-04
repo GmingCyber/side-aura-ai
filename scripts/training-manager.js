@@ -1,40 +1,56 @@
 // training-manager.js
 class TrainingManager {
     constructor() {
-        this.trainingData = [];
+        this.categories = {
+            text: [],
+            files: [],
+            sources: []
+        };
     }
 
     async loadTraining() {
-        const result = await chrome.storage.local.get(['aura_training']);
-        this.trainingData = result.aura_training || [];
-        return this.trainingData;
+        const result = await chrome.storage.local.get(['aura_training_v2']);
+        this.categories = result.aura_training_v2 || { text: [], files: [], sources: [] };
+        return this.categories;
     }
 
-    async addTraining(type, content, name) {
-        const item = {
+    async addItem(category, item) {
+        if (!this.categories[category]) this.categories[category] = [];
+        const newItem = {
             id: Date.now(),
-            type, // 'file', 'url', 'text'
-            content,
-            name,
+            ...item,
             timestamp: new Date().toISOString()
         };
-        this.trainingData.push(item);
-        await chrome.storage.local.set({ 'aura_training': this.trainingData });
-        return item;
+        this.categories[category].push(newItem);
+        await chrome.storage.local.set({ 'aura_training_v2': this.categories });
+        return newItem;
     }
 
-    async removeTraining(id) {
-        this.trainingData = this.trainingData.filter(t => t.id !== id);
-        await chrome.storage.local.set({ 'aura_training': this.trainingData });
+    async removeItem(category, id) {
+        if (this.categories[category]) {
+            this.categories[category] = this.categories[category].filter(item => item.id !== id);
+            await chrome.storage.local.set({ 'aura_training_v2': this.categories });
+        }
     }
 
     getContextForPrompt() {
-        if (this.trainingData.length === 0) return '';
+        let context = "\n\n--- CONHECIMENTO DE TREINAMENTO ---\n";
         
-        let context = "\n\nCONHECIMENTO ADICIONAL (TREINAMENTO):\n";
-        this.trainingData.forEach(item => {
-            context += `--- ${item.name} ---\n${item.content}\n`;
-        });
-        return context;
+        if (this.categories.text.length > 0) {
+            context += "\n[TEXTOS E REGRAS]:\n";
+            this.categories.text.forEach(t => context += `- ${t.title}: ${t.content}\n`);
+        }
+        
+        if (this.categories.sources.length > 0) {
+            context += "\n[FONTES E URLS]:\n";
+            this.categories.sources.forEach(s => context += `- ${s.name}: ${s.content}\n`);
+        }
+
+        if (this.categories.files.length > 0) {
+            context += "\n[ARQUIVOS]:\n";
+            this.categories.files.forEach(f => context += `- ${f.name} (Processado)\n`);
+        }
+
+        return context === "\n\n--- CONHECIMENTO DE TREINAMENTO ---\n" ? "" : context;
     }
 }
