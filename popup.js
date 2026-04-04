@@ -1,4 +1,4 @@
-// popup.js - AURA AI v3.8.0 (DYNAMIC CONTEXTUAL THINKING)
+// popup.js - AURA AI v3.9.0 (DEEP CONTEXTUAL THINKING)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -75,6 +75,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Thinking Templates
         const templates = {
+            tools: {
+                thinking: ["O usuário mencionou a criação de ferramentas.", "Analisando o desafio técnico proposto.", "Processando a ideia de novas funcionalidades."],
+                detail: [`O usuário disse "${text.substring(0, 25)}...", vou me preparar para construir.`, "Preciso estar pronto para o desenvolvimento técnico.", "Vou estruturar a resposta para apoiar essa criação."]
+            },
             question: {
                 thinking: ["O usuário fez uma pergunta direta.", "Analisando a dúvida do usuário.", "Processando a questão enviada."],
                 detail: [`Vou buscar a melhor resposta para "${text.substring(0, 20)}..."`, "Preciso ser claro e preciso na explicação.", "Vou verificar o contexto para responder corretamente."]
@@ -98,7 +102,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         let type = 'default';
-        if (lowerText.includes('?') || lowerText.startsWith('como') || lowerText.startsWith('o que')) type = 'question';
+        if (lowerText.includes('ferramenta') || lowerText.includes('criar') || lowerText.includes('desenvolver')) type = 'tools';
+        else if (lowerText.includes('?') || lowerText.startsWith('como') || lowerText.startsWith('o que')) type = 'question';
         else if (lowerText.startsWith('crie') || lowerText.startsWith('faça') || lowerText.startsWith('gere')) type = 'command';
         else if (lowerText.includes('olá') || lowerText.includes('oi') || lowerText.includes('bom dia')) type = 'greeting';
         else if (lowerText.includes('teste') || lowerText.includes('testando')) type = 'test';
@@ -164,16 +169,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             // Dynamic Thinking Step
             const dynamic = getDynamicThinking(text);
-            addThinkingStep("Thinking", dynamic.thinking);
-            await new Promise(r => setTimeout(r, 600));
-            addThinkingStep("Analisando", dynamic.detail);
-            await new Promise(r => setTimeout(r, 600));
+            
+            const thinkingTitles = ["Thinking", "Pensando", "Processando", "Trabalhando"];
+            const analyzingTitles = ["Analisando", "Estruturando", "Mapeando", "Contextualizando"];
+            const planningTitles = ["Planejando", "Plano", "Estratégia", "Construindo"];
 
-            // Planning Step
-            const planningLabels = ["Plano", "Planejando", "Estruturando"];
-            const randomPlanning = planningLabels[Math.floor(Math.random() * planningLabels.length)];
-            addThinkingStep(randomPlanning, "Vou gerar a resposta agora seguindo o tom da persona.");
-            await new Promise(r => setTimeout(r, 400));
+            addThinkingStep(thinkingTitles[Math.floor(Math.random() * thinkingTitles.length)], dynamic.thinking);
+            await new Promise(r => setTimeout(r, 700));
+            
+            addThinkingStep(analyzingTitles[Math.floor(Math.random() * analyzingTitles.length)], dynamic.detail);
+            await new Promise(r => setTimeout(r, 700));
+
+            addThinkingStep(planningTitles[Math.floor(Math.random() * planningTitles.length)], "Vou gerar a resposta agora seguindo o tom da persona.");
+            await new Promise(r => setTimeout(r, 500));
 
             await aiClient.loadConfig();
             
