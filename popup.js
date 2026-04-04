@@ -1,4 +1,4 @@
-// popup.js - AURA AI v3.9.0 (DEEP CONTEXTUAL THINKING)
+// popup.js - AURA AI v4.0.0 (DIRECT QUOTE THINKING)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -72,32 +72,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Helper to generate dynamic thinking based on user input
     function getDynamicThinking(text) {
         const lowerText = text.toLowerCase();
+        const truncatedText = text.length > 60 ? text.substring(0, 57) + "..." : text;
         
         // Thinking Templates
         const templates = {
             tools: {
-                thinking: ["O usuário mencionou a criação de ferramentas.", "Analisando o desafio técnico proposto.", "Processando a ideia de novas funcionalidades."],
-                detail: [`O usuário disse "${text.substring(0, 25)}...", vou me preparar para construir.`, "Preciso estar pronto para o desenvolvimento técnico.", "Vou estruturar a resposta para apoiar essa criação."]
+                thinking: `O usuário enviou: "${truncatedText}"; então devo me preparar para construir.`,
+                detail: "Vou estruturar a resposta para apoiar essa criação técnica."
             },
             question: {
-                thinking: ["O usuário fez uma pergunta direta.", "Analisando a dúvida do usuário.", "Processando a questão enviada."],
-                detail: [`Vou buscar a melhor resposta para "${text.substring(0, 20)}..."`, "Preciso ser claro e preciso na explicação.", "Vou verificar o contexto para responder corretamente."]
+                thinking: `O usuário enviou: "${truncatedText}"; então devo buscar a melhor resposta.`,
+                detail: "Preciso ser claro e preciso na explicação da dúvida."
             },
             command: {
-                thinking: ["O usuário enviou um comando.", "Processando a instrução recebida.", "Analisando a tarefa solicitada."],
-                detail: ["Vou executar a ação conforme as diretrizes.", "Preciso garantir que o resultado seja o esperado.", "Vou estruturar o plano de execução agora."]
+                thinking: `O usuário enviou: "${truncatedText}"; então devo executar a tarefa solicitada.`,
+                detail: "Vou garantir que o resultado siga as instruções recebidas."
             },
             greeting: {
-                thinking: ["O usuário iniciou uma conversa.", "Saudação detectada.", "Interação inicial identificada."],
-                detail: ["Vou responder de forma amigável e prestativa.", "Preciso me apresentar e me colocar à disposição.", "Vou manter o tom da persona ativa."]
+                thinking: `O usuário enviou: "${truncatedText}"; então devo responder de forma amigável.`,
+                detail: "Vou manter o tom da persona e me colocar à disposição."
             },
             test: {
-                thinking: ["O usuário está realizando um teste.", "Validação de sistema detectada.", "O usuário enviou '${text}'."],
-                detail: ["Vou confirmar que estou operacional.", "Preciso responder de forma a validar a funcionalidade.", "Vou perguntar o que exatamente ele está testando."]
+                thinking: `O usuário enviou: "${truncatedText}"; então devo confirmar que estou operacional.`,
+                detail: "Vou responder de forma a validar a funcionalidade do sistema."
             },
             default: {
-                thinking: ["Analisando a mensagem do usuário.", "Processando o conteúdo enviado.", "O usuário enviou uma nova solicitação."],
-                detail: [`O usuário disse "${text.substring(0, 25)}...", vou processar.`, "Vou estruturar a melhor forma de ajudar.", "Analisando intenção e contexto."]
+                thinking: `O usuário enviou: "${truncatedText}"; então devo processar e ajudar.`,
+                detail: "Analisando intenção e contexto para a melhor resposta."
             }
         };
 
@@ -108,11 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (lowerText.includes('olá') || lowerText.includes('oi') || lowerText.includes('bom dia')) type = 'greeting';
         else if (lowerText.includes('teste') || lowerText.includes('testando')) type = 'test';
 
-        const t = templates[type];
-        return {
-            thinking: t.thinking[Math.floor(Math.random() * t.thinking.length)],
-            detail: t.detail[Math.floor(Math.random() * t.detail.length)]
-        };
+        return templates[type];
     }
 
     // Send message function
