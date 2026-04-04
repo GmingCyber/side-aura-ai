@@ -1,4 +1,4 @@
-// popup.js - AURA AI v3.7.0 (ADVANCED THINKING MODE)
+// popup.js - AURA AI v3.8.0 (DYNAMIC CONTEXTUAL THINKING)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -69,6 +69,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         userInput.style.height = (userInput.scrollHeight) + 'px';
     });
 
+    // Helper to generate dynamic thinking based on user input
+    function getDynamicThinking(text) {
+        const lowerText = text.toLowerCase();
+        
+        // Thinking Templates
+        const templates = {
+            question: {
+                thinking: ["O usuário fez uma pergunta direta.", "Analisando a dúvida do usuário.", "Processando a questão enviada."],
+                detail: [`Vou buscar a melhor resposta para "${text.substring(0, 20)}..."`, "Preciso ser claro e preciso na explicação.", "Vou verificar o contexto para responder corretamente."]
+            },
+            command: {
+                thinking: ["O usuário enviou um comando.", "Processando a instrução recebida.", "Analisando a tarefa solicitada."],
+                detail: ["Vou executar a ação conforme as diretrizes.", "Preciso garantir que o resultado seja o esperado.", "Vou estruturar o plano de execução agora."]
+            },
+            greeting: {
+                thinking: ["O usuário iniciou uma conversa.", "Saudação detectada.", "Interação inicial identificada."],
+                detail: ["Vou responder de forma amigável e prestativa.", "Preciso me apresentar e me colocar à disposição.", "Vou manter o tom da persona ativa."]
+            },
+            test: {
+                thinking: ["O usuário está realizando um teste.", "Validação de sistema detectada.", "O usuário enviou '${text}'."],
+                detail: ["Vou confirmar que estou operacional.", "Preciso responder de forma a validar a funcionalidade.", "Vou perguntar o que exatamente ele está testando."]
+            },
+            default: {
+                thinking: ["Analisando a mensagem do usuário.", "Processando o conteúdo enviado.", "O usuário enviou uma nova solicitação."],
+                detail: [`O usuário disse "${text.substring(0, 25)}...", vou processar.`, "Vou estruturar a melhor forma de ajudar.", "Analisando intenção e contexto."]
+            }
+        };
+
+        let type = 'default';
+        if (lowerText.includes('?') || lowerText.startsWith('como') || lowerText.startsWith('o que')) type = 'question';
+        else if (lowerText.startsWith('crie') || lowerText.startsWith('faça') || lowerText.startsWith('gere')) type = 'command';
+        else if (lowerText.includes('olá') || lowerText.includes('oi') || lowerText.includes('bom dia')) type = 'greeting';
+        else if (lowerText.includes('teste') || lowerText.includes('testando')) type = 'test';
+
+        const t = templates[type];
+        return {
+            thinking: t.thinking[Math.floor(Math.random() * t.thinking.length)],
+            detail: t.detail[Math.floor(Math.random() * t.detail.length)]
+        };
+    }
+
     // Send message function
     async function handleSendMessage() {
         const text = userInput.value.trim();
@@ -85,7 +126,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const trainingContext = trainingManager.getContextForPrompt();
         const activePersona = modelManager.getActiveModel();
         
-        // Aura Leens Context
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         const pageContext = tab ? `[CONTEXTO DA PÁGINA: ${tab.title} | URL: ${tab.url}]` : '';
 
@@ -122,24 +162,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         try {
-            // Step 1: Thinking
-            const thinkingLabels = ["Thinking", "Pensando", "Analisando", "Processando"];
-            const randomThinking = thinkingLabels[Math.floor(Math.random() * thinkingLabels.length)];
-            addThinkingStep(randomThinking, "O usuário enviou uma solicitação. Estou analisando o contexto e as instruções.");
-            
-            await new Promise(r => setTimeout(r, 800));
+            // Dynamic Thinking Step
+            const dynamic = getDynamicThinking(text);
+            addThinkingStep("Thinking", dynamic.thinking);
+            await new Promise(r => setTimeout(r, 600));
+            addThinkingStep("Analisando", dynamic.detail);
+            await new Promise(r => setTimeout(r, 600));
 
-            // Step 2: Planning
+            // Planning Step
             const planningLabels = ["Plano", "Planejando", "Estruturando"];
             const randomPlanning = planningLabels[Math.floor(Math.random() * planningLabels.length)];
-            addThinkingStep(randomPlanning, "Vou estruturar a resposta seguindo as diretrizes da persona e o contexto fornecido.");
-            
-            await new Promise(r => setTimeout(r, 800));
-
-            // Step 3: Creating
-            const creatingLabels = ["Criando", "Construindo", "Trabalhando", "Gerando"];
-            const randomCreating = creatingLabels[Math.floor(Math.random() * creatingLabels.length)];
-            addThinkingStep(randomCreating, "Iniciando a geração do conteúdo final...");
+            addThinkingStep(randomPlanning, "Vou gerar a resposta agora seguindo o tom da persona.");
+            await new Promise(r => setTimeout(r, 400));
 
             await aiClient.loadConfig();
             
@@ -152,14 +186,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let fullResponse = '';
             await aiClient.chat(apiMessages, (chunk, full) => {
-                // Remove thinking steps when streaming starts
                 if (thinkingContainer) {
-                    thinkingContainer.style.opacity = '0.5';
-                    thinkingContainer.style.fontSize = '10px';
+                    thinkingContainer.style.opacity = '0.4';
+                    thinkingContainer.style.transform = 'scale(0.98)';
                 }
                 fullResponse = full;
                 
-                // Create or update response text area
                 let responseText = contentDiv.querySelector('.aura-response-text');
                 if (!responseText) {
                     responseText = document.createElement('div');
