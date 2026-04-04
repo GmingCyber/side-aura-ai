@@ -2,12 +2,67 @@
 class AuraAIClient {
     constructor() {
         this.providers = [
-            { id: 'openrouter', name: 'OpenRouter', url: 'https://openrouter.ai/api/v1', key: '', models: ['google/gemini-2.0-flash-exp:free', 'anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'deepseek/deepseek-chat'] },
-            { id: 'google', name: 'Google Gemini', url: 'https://generativelanguage.googleapis.com/v1beta/openai', key: '', models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'] },
-            { id: 'anthropic', name: 'Anthropic', url: 'https://api.anthropic.com/v1', key: '', models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229'] },
-            { id: 'openai', name: 'OpenAI', url: 'https://api.openai.com/v1', key: '', models: ['gpt-4o', 'gpt-4o-mini', 'o1-preview'] },
-            { id: 'groq', name: 'Groq', url: 'https://api.groq.com/openai/v1', key: '', models: ['llama-3.1-70b-versatile', 'mixtral-8x7b-32768'] },
-            { id: 'custom', name: 'Custom Provider', url: '', key: '', models: [] }
+            { 
+                id: 'openrouter', 
+                name: 'OpenRouter', 
+                url: 'https://openrouter.ai/api/v1', 
+                key: '', 
+                models: [
+                    'google/gemini-2.0-flash-exp:free', 
+                    'google/gemini-pro-1.5',
+                    'anthropic/claude-3.5-sonnet', 
+                    'anthropic/claude-3-opus',
+                    'openai/gpt-4o', 
+                    'openai/gpt-4o-mini',
+                    'deepseek/deepseek-chat',
+                    'meta-llama/llama-3.1-405b-instruct',
+                    'mistralai/mistral-large-2407',
+                    'liquid/lfm-40b',
+                    'qwen/qwen-2.5-72b-instruct'
+                ] 
+            },
+            { 
+                id: 'google', 
+                name: 'Google Gemini', 
+                url: 'https://generativelanguage.googleapis.com/v1beta/openai', 
+                key: '', 
+                models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp', 'gemini-1.0-pro'] 
+            },
+            { 
+                id: 'anthropic', 
+                name: 'Anthropic', 
+                url: 'https://api.anthropic.com/v1', 
+                key: '', 
+                models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'] 
+            },
+            { 
+                id: 'openai', 
+                name: 'OpenAI', 
+                url: 'https://api.openai.com/v1', 
+                key: '', 
+                models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo', 'o1-preview', 'o1-mini'] 
+            },
+            { 
+                id: 'groq', 
+                name: 'Groq', 
+                url: 'https://api.groq.com/openai/v1', 
+                key: '', 
+                models: ['llama-3.1-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'] 
+            },
+            { 
+                id: 'deepseek', 
+                name: 'DeepSeek', 
+                url: 'https://api.deepseek.com/v1', 
+                key: '', 
+                models: ['deepseek-chat', 'deepseek-coder'] 
+            },
+            { 
+                id: 'custom', 
+                name: 'Custom Provider', 
+                url: '', 
+                key: '', 
+                models: [] 
+            }
         ];
         this.currentProviderId = 'openrouter';
         this.currentModel = 'google/gemini-2.0-flash-exp:free';
@@ -17,7 +72,6 @@ class AuraAIClient {
         const result = await chrome.storage.local.get(['aura_providers', 'aura_current_provider', 'aura_current_model']);
         
         if (result.aura_providers) {
-            // Update local providers with saved data
             result.aura_providers.forEach(saved => {
                 const p = this.providers.find(p => p.id === saved.id);
                 if (p) {
@@ -28,19 +82,23 @@ class AuraAIClient {
             });
         }
         
-        this.currentProviderId = result.aura_current_provider || 'openrouter';
-        this.currentModel = result.aura_current_model || 'google/gemini-2.0-flash-exp:free';
+        // CRITICAL FIX: Ensure currentProviderId is updated from storage
+        if (result.aura_current_provider) {
+            this.currentProviderId = result.aura_current_provider;
+        }
+        if (result.aura_current_model) {
+            this.currentModel = result.aura_current_model;
+        }
         
-        console.log('Config Loaded:', { provider: this.currentProviderId, model: this.currentModel });
+        console.log('AURA Config Loaded:', { provider: this.currentProviderId, model: this.currentModel });
     }
 
     async saveProvider(providerId, updates) {
         const p = this.providers.find(p => p.id === providerId);
         if (p) {
             Object.assign(p, updates);
-            // Save the entire providers array to ensure keys and URLs are persisted
             await chrome.storage.local.set({ 'aura_providers': this.providers });
-            console.log(`Provider ${providerId} saved with updates:`, updates);
+            console.log(`AURA Provider ${providerId} saved.`);
         }
     }
 
@@ -52,7 +110,7 @@ class AuraAIClient {
     async setProvider(providerId) {
         this.currentProviderId = providerId;
         await chrome.storage.local.set({ 'aura_current_provider': providerId });
-        console.log('Active Provider Set to:', providerId);
+        console.log('AURA Active Provider Set:', providerId);
     }
 
     getProvider() {
