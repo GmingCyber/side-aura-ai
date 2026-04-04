@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "AURA AI",
+  "version": "3.0.0",
+  "description": "Assistente de IA avançado com interface premium",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "contextMenus",
+    "clipboardWrite",
+    "clipboardRead",
+    "notifications"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icons/aura-16.png",
+      "32": "assets/icons/aura-32.png",
+      "48": "assets/icons/aura-48.png",
+      "128": "assets/icons/aura-128.png"
+    }
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"],
+    "css": ["styles/content.css"]
+  }],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [{
+    "resources": ["assets/*", "lib/*", "styles/*", "scripts/*", "components/*"],
+    "matches": ["<all_urls>"]
+  }]
+}

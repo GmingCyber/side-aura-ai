@@ -1,0 +1,39 @@
+/* animations.css */
+@keyframes auraFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes auraSlideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes auraPulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.aura-fade-in {
+    animation: auraFadeIn 0.4s ease-out forwards;
+}
+
+.aura-slide-in {
+    animation: auraSlideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.aura-typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.2em;
+    background: var(--aura-primary-light);
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: auraCursorBlink 0.8s infinite;
+}
+
+@keyframes auraCursorBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
