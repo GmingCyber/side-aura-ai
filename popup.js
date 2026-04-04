@@ -1,8 +1,10 @@
-// popup.js - AURA AI v6.0.0 (AURA ORCHESTRATOR)
+// popup.js - AURA AI v6.1.0 (HISTORY & NEW CHAT)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
     const sendBtn = document.getElementById('aura-send-btn');
+    const newChatBtn = document.getElementById('aura-new-chat');
+    const historyBtn = document.getElementById('aura-history-btn');
     const canvasContainer = 'aura-canvas-container';
 
     // Initialize Clients
@@ -10,6 +12,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const notesManager = new NotesManager();
     const trainingManager = new TrainingManager();
     const modelManager = new AuraModelManager();
+    
+    let currentChatId = Date.now().toString();
     
     // Load all configs
     try {
@@ -31,12 +35,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Load existing messages
-    const savedMessages = await chrome.storage.local.get(['aura_chat_history']);
-    if (savedMessages.aura_chat_history) {
-        savedMessages.aura_chat_history.forEach(msg => {
+    // Load current chat or start new
+    async function loadChat(chatId) {
+        currentChatId = chatId;
+        chatMessages.innerHTML = '';
+        const data = await chrome.storage.local.get([`aura_chat_${chatId}`]);
+        const history = data[`aura_chat_${chatId}`] || [];
+        history.forEach(msg => {
             appendMessage(msg.role === 'user' ? 'USER' : 'AURA', msg.content, msg.role === 'user');
         });
+        await chrome.storage.local.set({ 'aura_current_chat_id': chatId });
+    }
+
+    const lastChat = await chrome.storage.local.get(['aura_current_chat_id']);
+    if (lastChat.aura_current_chat_id) {
+        await loadChat(lastChat.aura_current_chat_id);
+    } else {
+        await loadChat(currentChatId);
+    }
+
+    // New Chat Functionality
+    if (newChatBtn) {
+        newChatBtn.onclick = async () => {
+            const newId = Date.now().toString();
+            await loadChat(newId);
+            // Save to history list
+            const historyData = await chrome.storage.local.get(['aura_chats_list']);
+            const list = historyData.aura_chats_list || [];
+            list.unshift({ id: newId, title: 'Nova Conversa', date: new Date().toLocaleString() });
+            await chrome.storage.local.set({ 'aura_chats_list': list });
+        };
+    }
+
+    // History Panel
+    if (historyBtn) {
+        historyBtn.onclick = async () => {
+            const historyData = await chrome.storage.local.get(['aura_chats_list']);
+            const list = historyData.aura_chats_list || [];
+            
+            const historyHtml = `
+                <div class="aura-settings-overlay">
+                    <div class="aura-settings-panel" style="width: 350px;">
+                        <h3>Histórico de Conversas</h3>
+                        <div class="aura-history-list" style="max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
+                            ${list.length ? list.map(c => `
+                                <div class="aura-history-item" data-id="${c.id}" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.3s;">
+                                    <div style="font-weight: 600; font-size: 14px;">${c.title}</div>
+                                    <div style="font-size: 11px; color: var(--aura-text-muted);">${c.date}</div>
+                                </div>
+                            `).join('') : '<p style="text-align: center; color: var(--aura-text-muted);">Nenhuma conversa salva.</p>'}
+                        </div>
+                        <button id="history-close" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: white; cursor: pointer;">Fechar</button>
+                    </div>
+                </div>
+            `;
+            
+            const div = document.createElement('div');
+            div.innerHTML = historyHtml;
+            document.body.appendChild(div);
+            
+            div.querySelectorAll('.aura-history-item').forEach(item => {
+                item.onclick = async () => {
+                    await loadChat(item.dataset.id);
+                    div.remove();
+                };
+            });
+            
+            document.getElementById('history-close').onclick = () => div.remove();
+        };
     }
 
     // Check for pending actions
@@ -117,8 +183,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         appendMessage('USER', text, true);
 
-        const history = await chrome.storage.local.get(['aura_chat_history']);
-        const messages = history.aura_chat_history || [];
+        const data = await chrome.storage.local.get([`aura_chat_${currentChatId}`]);
+        const messages = data[`aura_chat_${currentChatId}`] || [];
         
         const trainingContext = trainingManager.getContextForPrompt();
         const activePersona = modelManager.getActiveModel();
@@ -241,7 +307,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             const newHistory = [...messages, { role: 'user', content: text }, { role: 'assistant', content: fullResponse }];
-            await chrome.storage.local.set({ 'aura_chat_history': newHistory.slice(-20) });
+            const storageObj = {};
+            storageObj[`aura_chat_${currentChatId}`] = newHistory.slice(-50);
+            await chrome.storage.local.set(storageObj);
+
+            // Update title in history list if it's the first message
+            if (messages.length === 0) {
+                const historyData = await chrome.storage.local.get(['aura_chats_list']);
+                const list = historyData.aura_chats_list || [];
+                const chatIdx = list.findIndex(c => c.id === currentChatId);
+                if (chatIdx !== -1) {
+                    list[chatIdx].title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+                    await chrome.storage.local.set({ 'aura_chats_list': list });
+                }
+            }
 
         } catch (error) {
             clearInterval(timerInterval);

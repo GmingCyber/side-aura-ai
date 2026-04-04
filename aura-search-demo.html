@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA Search - Demonstração</title>
+    <style>
+        :root {
+            --aura-bg: #0f111a;
+            --aura-panel: #1a1d2e;
+            --aura-accent: #7c4dff;
+            --aura-gradient: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
+            --aura-text: #ffffff;
+            --aura-text-muted: #a0a0a0;
+            --aura-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--aura-bg);
+            color: var(--aura-text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .demo-container {
+            width: 90%;
+            max-width: 800px;
+            background: var(--aura-panel);
+            border: 1px solid var(--aura-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .demo-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(124, 77, 255, 0.1) 0%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .header {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 0 15px var(--aura-accent));
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: var(--aura-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .search-box {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--aura-border);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: 0.3s;
+        }
+
+        .search-box:hover {
+            border-color: var(--aura-accent);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .search-icon {
+            font-size: 24px;
+            color: var(--aura-accent);
+        }
+
+        .search-text {
+            font-size: 18px;
+            color: var(--aura-text-muted);
+            flex: 1;
+        }
+
+        .thought-demo {
+            position: relative;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--aura-border);
+            border-radius: 16px;
+            padding: 20px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .thought-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--aura-border);
+        }
+
+        .timer {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--aura-accent);
+        }
+
+        .step {
+            margin-bottom: 15px;
+            padding-left: 25px;
+            position: relative;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: stepIn 0.5s forwards;
+        }
+
+        .step::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 18px;
+            bottom: -10px;
+            width: 1px;
+            background: var(--aura-border);
+        }
+
+        .step:last-child::before {
+            display: none;
+        }
+
+        .step-dot {
+            position: absolute;
+            left: 0;
+            top: 2px;
+            font-size: 14px;
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .step-desc {
+            font-size: 13px;
+            color: var(--aura-text-muted);
+            line-height: 1.5;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes stepIn {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step:nth-child(1) { animation-delay: 0.5s; }
+        .step:nth-child(2) { animation-delay: 1.5s; }
+        .step:nth-child(3) { animation-delay: 2.5s; }
+        .step:nth-child(4) { animation-delay: 3.5s; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--aura-gradient);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="header">
+            <div class="logo">💎</div>
+            <h1>AURA Search Engine</h1>
+            <p style="color: var(--aura-text-muted);">Inteligência Orquestrada em Tempo Real</p>
+        </div>
+
+        <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <span class="search-text">"Quais são as novidades da Chrome Extension API em 2026?"</span>
+        </div>
+
+        <div class="thought-demo">
+            <div class="thought-header">
+                <span style="font-size: 18px;">🧠</span>
+                <span class="timer">Pensou por 4 segundos</span>
+            </div>
+
+            <div class="step">
+                <span class="step-dot">🔍</span>
+                <div class="step-title">Aura Search...</div>
+                <div class="step-desc">| Informação não encontrada no treinamento local... Realizando busca web profunda sobre "Chrome Extension API 2026".</div>
+            </div>
+
+            <div class="step">
+                <span class="step-dot">🌐</span>
+                <div class="step-title">Processando Fontes...</div>
+                <div class="step-desc">| 3 fontes oficiais encontradas (developer.chrome.com). Sintetizando atualizações do Manifest V4 e novas Side Panel APIs.</div>
+            </div>
+
+            <div class="step">
+                <span class="step-dot">💻</span>
+                <div class="step-title">Claude Coder...</div>
+                <div class="step-desc">| Detectada necessidade de exemplo técnico. Estruturando snippet de código para a nova API de Inteligência On-device.</div>
+            </div>
+
+            <div class="step">
+                <span class="step-dot">✅</span>
+                <div class="step-title">Fact-Checking...</div>
+                <div class="step-desc">| Validando consistência técnica com a documentação oficial. 100% de precisão detectada.</div>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <div class="badge">AURA AI v6.1.0</div>
+        </div>
+    </div>
+</body>
+</html>
