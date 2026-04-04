@@ -1,4 +1,4 @@
-// popup.js - AURA AI v3.6.0
+// popup.js - AURA AI v3.7.0 (ADVANCED THINKING MODE)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -98,21 +98,49 @@ document.addEventListener('DOMContentLoaded', async () => {
             { role: 'user', content: fullPrompt }
         ];
 
-        // Thinking & Building Mode Visual
+        // Advanced Thinking Mode Visual
         const aiMsgDiv = appendMessage(activePersona.title, '', false);
         const contentDiv = aiMsgDiv.querySelector('.aura-message-content');
         
-        const thinkingIndicator = document.createElement('div');
-        thinkingIndicator.className = 'aura-thinking-mode';
-        thinkingIndicator.innerHTML = `
-            <div class="aura-thinking-dots">
-                <span></span><span></span><span></span>
-            </div>
-            <span class="aura-thinking-text">Thinking & Building Mode...</span>
-        `;
-        contentDiv.appendChild(thinkingIndicator);
+        const thinkingContainer = document.createElement('div');
+        thinkingContainer.className = 'aura-advanced-thinking';
+        contentDiv.appendChild(thinkingContainer);
+
+        const addThinkingStep = (label, detail) => {
+            const step = document.createElement('div');
+            step.className = 'aura-thinking-step';
+            step.innerHTML = `
+                <div class="aura-step-header">
+                    <span class="aura-step-dot"></span>
+                    <span class="aura-step-label">${label}...</span>
+                </div>
+                <div class="aura-step-detail">| ${detail}</div>
+            `;
+            thinkingContainer.appendChild(step);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return step;
+        };
 
         try {
+            // Step 1: Thinking
+            const thinkingLabels = ["Thinking", "Pensando", "Analisando", "Processando"];
+            const randomThinking = thinkingLabels[Math.floor(Math.random() * thinkingLabels.length)];
+            addThinkingStep(randomThinking, "O usuário enviou uma solicitação. Estou analisando o contexto e as instruções.");
+            
+            await new Promise(r => setTimeout(r, 800));
+
+            // Step 2: Planning
+            const planningLabels = ["Plano", "Planejando", "Estruturando"];
+            const randomPlanning = planningLabels[Math.floor(Math.random() * planningLabels.length)];
+            addThinkingStep(randomPlanning, "Vou estruturar a resposta seguindo as diretrizes da persona e o contexto fornecido.");
+            
+            await new Promise(r => setTimeout(r, 800));
+
+            // Step 3: Creating
+            const creatingLabels = ["Criando", "Construindo", "Trabalhando", "Gerando"];
+            const randomCreating = creatingLabels[Math.floor(Math.random() * creatingLabels.length)];
+            addThinkingStep(randomCreating, "Iniciando a geração do conteúdo final...");
+
             await aiClient.loadConfig();
             
             if (activePersona.id !== 'default') {
@@ -124,9 +152,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let fullResponse = '';
             await aiClient.chat(apiMessages, (chunk, full) => {
-                if (thinkingIndicator) thinkingIndicator.remove();
+                // Remove thinking steps when streaming starts
+                if (thinkingContainer) {
+                    thinkingContainer.style.opacity = '0.5';
+                    thinkingContainer.style.fontSize = '10px';
+                }
                 fullResponse = full;
-                contentDiv.textContent = full;
+                
+                // Create or update response text area
+                let responseText = contentDiv.querySelector('.aura-response-text');
+                if (!responseText) {
+                    responseText = document.createElement('div');
+                    responseText.className = 'aura-response-text';
+                    contentDiv.appendChild(responseText);
+                }
+                responseText.textContent = full;
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             });
 
@@ -134,7 +174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await chrome.storage.local.set({ 'aura_chat_history': newHistory.slice(-20) });
 
         } catch (error) {
-            if (thinkingIndicator) thinkingIndicator.remove();
+            if (thinkingContainer) thinkingContainer.remove();
             contentDiv.textContent = `Erro: ${error.message}`;
             contentDiv.classList.add('aura-error');
         }
@@ -285,6 +325,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="aura-settings-overlay">
                 <div class="aura-settings-panel">
                     <h3>Criar Nova Persona</h3>
+                    <div class="aura-setting-item"><label>Ícone (Emoji):</label><input type="text" id="persona-icon" value="✨" style="width: 50px;"></div>
                     <div class="aura-setting-item"><label>Título:</label><input type="text" id="persona-title" placeholder="ex: Design Gemini"></div>
                     <div class="aura-setting-item"><label>Descrição:</label><textarea id="persona-desc" placeholder="Como a IA deve se comportar..."></textarea></div>
                     <div class="aura-setting-item"><label>Provedor:</label><select id="persona-provider">${aiClient.providers.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}</select></div>
@@ -298,7 +339,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         div.innerHTML = html;
         document.body.appendChild(div);
         document.getElementById('persona-save').onclick = async () => {
-            const data = { title: document.getElementById('persona-title').value, description: document.getElementById('persona-desc').value, provider: document.getElementById('persona-provider').value, apiKey: document.getElementById('persona-key').value, model: document.getElementById('persona-model').value, icon: '✨' };
+            const data = { 
+                title: document.getElementById('persona-title').value, 
+                description: document.getElementById('persona-desc').value, 
+                provider: document.getElementById('persona-provider').value, 
+                apiKey: document.getElementById('persona-key').value, 
+                model: document.getElementById('persona-model').value, 
+                icon: document.getElementById('persona-icon').value || '✨' 
+            };
             if (data.title && data.model) {
                 const newPersona = await modelManager.addModel(data);
                 await modelManager.setActiveModel(newPersona.id);
@@ -336,6 +384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const formArea = document.getElementById('training-add-form');
             const items = trainingManager.categories[tab] || [];
             contentArea.innerHTML = items.length ? items.map(item => `<div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between;"><span>${item.title || item.name}</span><button class="aura-remove-item" data-id="${item.id}" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button></div>`).join('') : '<p style="font-size: 12px; color: var(--aura-text-muted);">Nenhum item adicionado.</p>';
+            
             if (tab === 'text') {
                 formArea.innerHTML = `<input type="text" id="add-title" placeholder="Título/Nome" style="width:100%; margin-bottom:5px;"><textarea id="add-content" placeholder="Cole textos, regras, instruções..." style="width:100%; height:80px;"></textarea><button id="add-btn" style="width:100%; padding:8px; background:var(--aura-gradient); border:none; border-radius:6px; color:white; cursor:pointer;">Adicionar Texto</button>`;
             } else if (tab === 'files') {
@@ -343,10 +392,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 formArea.innerHTML = `<input type="text" id="add-title" placeholder="Nome desta fonte" style="width:100%; margin-bottom:5px;"><textarea id="add-content" placeholder="Cole o conteúdo ou descreva a fonte..." style="width:100%; height:60px;"></textarea><button id="add-btn" style="width:100%; padding:8px; background:var(--aura-gradient); border:none; border-radius:6px; color:white; cursor:pointer;">Adicionar Fonte</button>`;
             }
+            
             document.getElementById('add-btn').onclick = async () => {
-                const title = document.getElementById('add-title')?.value || document.getElementById('add-file')?.files[0]?.name;
-                const content = document.getElementById('add-content')?.value || "Arquivo processado";
-                if (title) { await trainingManager.addItem(tab, { title, name: title, content }); updateTab(tab); }
+                if (tab === 'files') {
+                    const fileInput = document.getElementById('add-file');
+                    const file = fileInput.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = async (e) => {
+                            const content = e.target.result;
+                            await trainingManager.addItem(tab, { title: file.name, name: file.name, content: content });
+                            updateTab(tab);
+                        };
+                        reader.readAsText(file);
+                    }
+                } else {
+                    const title = document.getElementById('add-title')?.value;
+                    const content = document.getElementById('add-content')?.value;
+                    if (title && content) { 
+                        await trainingManager.addItem(tab, { title, name: title, content }); 
+                        updateTab(tab); 
+                    }
+                }
             };
             document.querySelectorAll('.aura-remove-item').forEach(btn => { btn.onclick = async () => { await trainingManager.removeItem(tab, parseInt(btn.dataset.id)); updateTab(tab); }; });
         };
