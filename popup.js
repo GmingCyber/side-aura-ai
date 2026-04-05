@@ -1,4 +1,4 @@
-// popup.js - AURA AI v12.0.1 (AURA REFINED)
+// popup.js - AURA AI v12.0.2 (AURA REFINED)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -33,6 +33,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) {
             console.error('Three.js Error:', e);
         }
+    }
+
+    // --- OVERLAY MANAGEMENT ---
+    function closeAllOverlays() {
+        document.querySelectorAll('.aura-settings-overlay').forEach(el => el.remove());
+    }
+
+    function createOverlay(html) {
+        closeAllOverlays();
+        const div = document.createElement('div');
+        div.className = 'aura-settings-overlay';
+        div.innerHTML = html;
+        document.body.appendChild(div);
+        return div;
     }
 
     // --- HISTORY SYSTEM ---
@@ -93,24 +107,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             const historyData = await chrome.storage.local.get(['aura_chats_list']);
             const list = historyData.aura_chats_list || [];
             const historyHtml = `
-                <div class="aura-settings-overlay">
-                    <div class="aura-settings-panel" style="width: 350px;">
-                        <h3>Histórico de Conversas</h3>
-                        <div class="aura-history-list" style="max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
-                            ${list.length ? list.map(c => `
-                                <div class="aura-history-item" data-id="${c.id}" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.3s;">
-                                    <div style="font-weight: 600; font-size: 14px;">${c.title}</div>
-                                    <div style="font-size: 11px; color: var(--aura-text-muted);">${c.date}</div>
-                                </div>
-                            `).join('') : '<p style="text-align: center; color: var(--aura-text-muted);">Nenhuma conversa salva.</p>'}
-                        </div>
-                        <button id="history-close" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: white; cursor: pointer;">Fechar</button>
+                <div class="aura-settings-panel" style="width: 350px;">
+                    <h3>Histórico de Conversas</h3>
+                    <div class="aura-history-list" style="max-height: 350px; overflow-y: auto; margin-bottom: 15px;">
+                        ${list.length ? list.map(c => `
+                            <div class="aura-history-item" data-id="${c.id}" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.3s;">
+                                <div style="font-weight: 600; font-size: 14px;">${c.title}</div>
+                                <div style="font-size: 11px; color: var(--aura-text-muted);">${c.date}</div>
+                            </div>
+                        `).join('') : '<p style="text-align: center; color: var(--aura-text-muted);">Nenhuma conversa salva.</p>'}
                     </div>
+                    <button id="history-close" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: white; cursor: pointer;">Fechar</button>
                 </div>
             `;
-            const div = document.createElement('div');
-            div.innerHTML = historyHtml;
-            document.body.appendChild(div);
+            const div = createOverlay(historyHtml);
             div.querySelectorAll('.aura-history-item').forEach(item => {
                 item.onclick = async () => {
                     await loadChat(item.dataset.id);
@@ -199,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- DYNAMIC THINKING (ADVANCED v12.0.1) ---
+    // --- DYNAMIC THINKING (ADVANCED v12.0.2) ---
     function getDynamicThinking(text) {
         const lowerText = text.toLowerCase();
         const truncatedText = text.length > 60 ? text.substring(0, 57) + "..." : text;
@@ -402,7 +412,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (sendBtn) sendBtn.onclick = (e) => { e.preventDefault(); handleSendMessage(); };
     userInput.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
 
-    // --- NAVIGATION SYSTEM (FIXED v12.0.1) ---
+    // --- NAVIGATION SYSTEM (FIXED v12.0.2) ---
     const navChat = document.getElementById('nav-chat');
     const navNotes = document.getElementById('nav-notes');
     const navTraining = document.getElementById('nav-training');
@@ -415,7 +425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById(activeId).classList.add('active');
     }
 
-    if (navChat) navChat.onclick = (e) => { e.preventDefault(); setActiveNav('nav-chat'); };
+    if (navChat) navChat.onclick = (e) => { e.preventDefault(); setActiveNav('nav-chat'); closeAllOverlays(); };
     if (navNotes) navNotes.onclick = (e) => { e.preventDefault(); setActiveNav('nav-notes'); showNotes(); };
     if (navTraining) navTraining.onclick = (e) => { e.preventDefault(); setActiveNav('nav-training'); showTraining(); };
     if (navSettings) navSettings.onclick = (e) => { e.preventDefault(); setActiveNav('nav-settings'); showSettings(); };
@@ -424,34 +434,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         await aiClient.loadConfig(); await modelManager.loadModels();
         const provider = aiClient.getProvider();
         const settingsHtml = `
-            <div class="aura-settings-overlay">
-                <div class="aura-settings-panel">
-                    <h3>Configurações AURA</h3>
-                    <div class="aura-setting-item"><label>API Key:</label><input type="password" id="settings-provider-key" value="${provider.key || ''}"></div>
-                    <div class="aura-settings-actions"><button id="settings-save">Salvar</button><button id="settings-close">Fechar</button></div>
-                </div>
+            <div class="aura-settings-panel">
+                <h3>Configurações AURA</h3>
+                <div class="aura-setting-item"><label>API Key:</label><input type="password" id="settings-provider-key" value="${provider.key || ''}"></div>
+                <div class="aura-settings-actions"><button id="settings-save">Salvar</button><button id="settings-close">Fechar</button></div>
             </div>
         `;
-        const div = document.createElement('div'); div.innerHTML = settingsHtml; document.body.appendChild(div);
-        document.getElementById('settings-save').onclick = async () => { const updatedProvider = { id: aiClient.currentProviderId, key: document.getElementById('settings-provider-key').value }; await aiClient.saveProvider(aiClient.currentProviderId, updatedProvider); div.remove(); };
-        document.getElementById('settings-close').onclick = () => div.remove();
+        const div = createOverlay(settingsHtml);
+        document.getElementById('settings-save').onclick = async () => { const updatedProvider = { id: aiClient.currentProviderId, key: document.getElementById('settings-provider-key').value }; await aiClient.saveProvider(aiClient.currentProviderId, updatedProvider); div.remove(); setActiveNav('nav-chat'); };
+        document.getElementById('settings-close').onclick = () => { div.remove(); setActiveNav('nav-chat'); };
     }
 
     async function showTraining() {
         await trainingManager.loadTraining();
         const trainingHtml = `
-            <div class="aura-settings-overlay">
-                <div class="aura-settings-panel" style="width: 400px;">
-                    <h3>Treinamento AURA</h3>
-                    <div class="aura-tabs" style="display: flex; gap: 10px; margin-bottom: 15px;"><button class="aura-tab-btn active" data-tab="text">Texto</button><button class="aura-tab-btn" data-tab="files">Arquivos</button><button class="aura-tab-btn" data-tab="sources">Fontes/URL</button></div>
-                    <div id="training-content-area" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px;"></div>
-                    <div class="aura-divider"></div>
-                    <div id="training-add-form"></div>
-                    <button id="training-close" style="width: 100%; margin-top: 10px; padding: 10px; background: transparent; border: 1px solid var(--aura-border); border-radius: 8px; color: white; cursor: pointer;">Fechar</button>
-                </div>
+            <div class="aura-settings-panel" style="width: 400px;">
+                <h3>Treinamento AURA</h3>
+                <div class="aura-tabs" style="display: flex; gap: 10px; margin-bottom: 15px;"><button class="aura-tab-btn active" data-tab="text">Texto</button><button class="aura-tab-btn" data-tab="files">Arquivos</button><button class="aura-tab-btn" data-tab="sources">Fontes/URL</button></div>
+                <div id="training-content-area" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px;"></div>
+                <div class="aura-divider"></div>
+                <div id="training-add-form"></div>
+                <button id="training-close" style="width: 100%; margin-top: 10px; padding: 10px; background: transparent; border: 1px solid var(--aura-border); border-radius: 8px; color: white; cursor: pointer;">Fechar</button>
             </div>
         `;
-        const div = document.createElement('div'); div.innerHTML = trainingHtml; document.body.appendChild(div);
+        const div = createOverlay(trainingHtml);
         const updateTab = (tab) => {
             const contentArea = document.getElementById('training-content-area'); const formArea = document.getElementById('training-add-form'); const items = trainingManager.categories[tab] || [];
             contentArea.innerHTML = items.length ? items.map(item => `<div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between;"><span>${item.title || item.name}</span><button class="aura-remove-item" data-id="${item.id}" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button></div>`).join('') : '<p style="font-size: 12px; color: var(--aura-text-muted);">Nenhum item adicionado.</p>';
@@ -464,23 +470,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         };
         document.querySelectorAll('.aura-tab-btn').forEach(btn => { btn.onclick = () => { document.querySelectorAll('.aura-tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); updateTab(btn.dataset.tab); }; });
-        updateTab('text'); document.getElementById('training-close').onclick = () => div.remove();
+        updateTab('text'); document.getElementById('training-close').onclick = () => { div.remove(); setActiveNav('nav-chat'); };
     }
 
     async function showNotes() {
         const notes = await notesManager.loadNotes();
         const notesHtml = `
-            <div class="aura-settings-overlay">
-                <div class="aura-settings-panel" style="width: 380px;">
-                    <h3>Suas Notas</h3>
-                    <div class="aura-notes-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">${notes.length ? notes.map(n => `<div class="aura-note-item" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 8px;"><strong>${n.title}</strong><p style="font-size: 12px; color: var(--aura-text-muted);">${n.content.substring(0, 50)}...</p></div>`).join('') : '<p>Nenhuma nota salva.</p>'}</div>
-                    <button id="add-note-btn" style="width: 100%; padding: 10px; background: var(--aura-gradient); border: none; border-radius: 8px; color: white; cursor: pointer;">+ Nova Nota</button>
-                    <button id="notes-close" style="width: 100%; margin-top: 10px; padding: 10px; background: transparent; border: 1px solid var(--aura-border); border-radius: 8px; color: white; cursor: pointer;">Fechar</button>
-                </div>
+            <div class="aura-settings-panel" style="width: 380px;">
+                <h3>Suas Notas</h3>
+                <div class="aura-notes-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">${notes.length ? notes.map(n => `<div class="aura-note-item" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 8px;"><strong>${n.title}</strong><p style="font-size: 12px; color: var(--aura-text-muted);">${n.content.substring(0, 50)}...</p></div>`).join('') : '<p>Nenhuma nota salva.</p>'}</div>
+                <button id="add-note-btn" style="width: 100%; padding: 10px; background: var(--aura-gradient); border: none; border-radius: 8px; color: white; cursor: pointer;">+ Nova Nota</button>
+                <button id="notes-close" style="width: 100%; margin-top: 10px; padding: 10px; background: transparent; border: 1px solid var(--aura-border); border-radius: 8px; color: white; cursor: pointer;">Fechar</button>
             </div>
         `;
-        const div = document.createElement('div'); div.innerHTML = notesHtml; document.body.appendChild(div);
+        const div = createOverlay(notesHtml);
         document.getElementById('add-note-btn').onclick = async () => { const title = prompt("Título da nota:"); const content = prompt("Conteúdo:"); if (title && content) { await notesManager.saveNote(title, content); div.remove(); showNotes(); } };
-        document.getElementById('notes-close').onclick = () => div.remove();
+        document.getElementById('notes-close').onclick = () => { div.remove(); setActiveNav('nav-chat'); };
     }
 });
