@@ -526,6 +526,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         function getProviderUrl(id) {
             const urls = {
+                'aura-free': 'https://openrouter.ai/keys',
                 'openrouter': 'https://openrouter.ai/keys',
                 'google': 'https://aistudio.google.com/app/apikey',
                 'anthropic': 'https://console.anthropic.com/settings/keys',

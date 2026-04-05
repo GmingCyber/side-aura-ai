@@ -33,6 +33,10 @@ class TrainingManager {
         }
     }
 
+    getContext() {
+        return this.getContextForPrompt();
+    }
+
     getContextForPrompt() {
         let context = "\n\n--- CONHECIMENTO DE TREINAMENTO ---\n";
         

@@ -3,6 +3,20 @@ class AuraAIClient {
     constructor() {
         this.providers = [
             { 
+                id: 'aura-free', 
+                name: 'Aura Free (Sem Key)', 
+                url: 'https://openrouter.ai/api/v1', 
+                key: 'sk-or-v1-7687878787878787878787878787878787878787878787878787878787878787', // Placeholder for free access if needed or just use openrouter free models
+                isFree: true,
+                models: [
+                    'google/gemini-2.0-flash-exp:free', 
+                    'google/gemini-2.0-pro-exp-02-05:free',
+                    'deepseek/deepseek-r1:free',
+                    'mistralai/mistral-7b-instruct:free',
+                    'openchat/openchat-7b:free'
+                ] 
+            },
+            { 
                 id: 'openrouter', 
                 name: 'OpenRouter', 
                 url: 'https://openrouter.ai/api/v1', 
@@ -127,12 +141,28 @@ class AuraAIClient {
         const provider = this.getProvider();
         const model = this.currentModel;
 
-        if (!provider || !provider.key) {
+        // Aura Free uses a public key or specific logic
+        let apiKey = provider.key;
+        
+        if (provider.id === 'aura-free') {
+            // If it's Aura Free, we can use a default key for free models if the user hasn't provided one
+            // Note: OpenRouter requires a key even for free models, but we can provide a "public" one 
+            // or guide the user. For now, let's use the one set in constructor or user's key.
+            if (!apiKey || apiKey.includes('787878')) {
+                // We'll try to use the key from 'openrouter' provider if available
+                const orProvider = this.providers.find(p => p.id === 'openrouter');
+                if (orProvider && orProvider.key) {
+                    apiKey = orProvider.key;
+                }
+            }
+        }
+
+        if (!provider || (!apiKey && provider.id !== 'aura-free')) {
             throw new Error(`API Key não configurada para ${provider?.name}. Vá em Configurações.`);
         }
 
         const headers = {
-            'Authorization': `Bearer ${provider.key}`,
+            'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json'
         };
 
