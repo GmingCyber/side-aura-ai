@@ -1,4 +1,4 @@
-// popup.js - AURA AI v12.0.2 (AURA REFINED)
+// popup.js - AURA AI v12.0.3 (AURA REFINED - FULL SETTINGS RESTORED)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
-    // --- LIVE PREVIEW SYSTEM (ADVANCED) ---
+    // --- LIVE PREVIEW SYSTEM ---
     function openLivePreview(type, title, content) {
         const existing = document.querySelector('.aura-live-preview');
         if (existing) existing.remove();
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- DYNAMIC THINKING (ADVANCED v12.0.2) ---
+    // --- DYNAMIC THINKING ---
     function getDynamicThinking(text) {
         const lowerText = text.toLowerCase();
         const truncatedText = text.length > 60 ? text.substring(0, 57) + "..." : text;
@@ -412,7 +412,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (sendBtn) sendBtn.onclick = (e) => { e.preventDefault(); handleSendMessage(); };
     userInput.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
 
-    // --- NAVIGATION SYSTEM (FIXED v12.0.2) ---
+    // --- NAVIGATION SYSTEM ---
     const navChat = document.getElementById('nav-chat');
     const navNotes = document.getElementById('nav-notes');
     const navTraining = document.getElementById('nav-training');
@@ -433,16 +433,136 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function showSettings() {
         await aiClient.loadConfig(); await modelManager.loadModels();
         const provider = aiClient.getProvider();
+        const models = provider.models || [];
+        const activeModel = aiClient.currentModel;
+        const personas = modelManager.models || [];
+
         const settingsHtml = `
-            <div class="aura-settings-panel">
+            <div class="aura-settings-panel" style="width: 420px; max-height: 550px; overflow-y: auto;">
                 <h3>Configurações AURA</h3>
-                <div class="aura-setting-item"><label>API Key:</label><input type="password" id="settings-provider-key" value="${provider.key || ''}"></div>
-                <div class="aura-settings-actions"><button id="settings-save">Salvar</button><button id="settings-close">Fechar</button></div>
+                
+                <div class="aura-setting-item">
+                    <label>Provedor de IA:</label>
+                    <select id="settings-provider-select">
+                        ${aiClient.providers.map(p => `<option value="${p.id}" ${p.id === aiClient.currentProviderId ? 'selected' : ''}>${p.name}</option>`).join('')}
+                    </select>
+                </div>
+
+                <div id="provider-details">
+                    <div class="aura-setting-item">
+                        <label>API Key:</label>
+                        <input type="password" id="settings-provider-key" value="${provider.key || ''}" placeholder="Insira sua chave">
+                    </div>
+                    ${aiClient.currentProviderId === 'custom' ? `
+                        <div class="aura-setting-item">
+                            <label>Base URL:</label>
+                            <input type="text" id="settings-provider-url" value="${provider.url || ''}" placeholder="https://api.exemplo.com/v1">
+                        </div>
+                    ` : ''}
+                    <div class="aura-setting-item">
+                        <label>Modelo de IA:</label>
+                        <select id="settings-model-select">
+                            ${models.map(m => `<option value="${m}" ${m === activeModel ? 'selected' : ''}>${m}</option>`).join('')}
+                            <option value="custom" ${!models.includes(activeModel) ? 'selected' : ''}>Custom Model ID</option>
+                        </select>
+                    </div>
+                    <div id="custom-model-area" style="display: ${!models.includes(activeModel) ? 'block' : 'none'};">
+                        <div class="aura-setting-item">
+                            <label>Custom Model ID:</label>
+                            <input type="text" id="settings-custom-model" value="${!models.includes(activeModel) ? activeModel : ''}" placeholder="ex: anthropic/claude-3.5-sonnet">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="aura-divider" style="margin: 20px 0; border-top: 1px solid var(--aura-border);"></div>
+                
+                <div class="aura-personas-section">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h4 style="font-size:14px; color:var(--aura-accent);">Personas (Aura Models)</h4>
+                        <button id="add-persona-btn" style="background:var(--aura-gradient); border:none; border-radius:4px; color:white; padding:4px 8px; font-size:11px; cursor:pointer;">+ Nova</button>
+                    </div>
+                    <div id="personas-list" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        ${personas.map(p => `
+                            <div class="persona-card ${p.id === modelManager.activeModelId ? 'active' : ''}" data-id="${p.id}" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; border:1px solid ${p.id === modelManager.activeModelId ? 'var(--aura-primary)' : 'var(--aura-border)'}; cursor:pointer; position:relative;">
+                                <div style="font-size:18px; margin-bottom:5px;">${p.icon || '🤖'}</div>
+                                <div style="font-weight:600; font-size:12px;">${p.title}</div>
+                                <button class="delete-persona" data-id="${p.id}" style="position:absolute; top:5px; right:5px; background:none; border:none; color:#ef4444; font-size:10px; cursor:pointer;">✕</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="aura-settings-actions" style="margin-top: 25px;">
+                    <button id="settings-save" style="background:var(--aura-gradient); color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:600;">Salvar Alterações</button>
+                    <button id="settings-close" style="background:rgba(255,255,255,0.1); color:white; border:none; padding:12px; border-radius:8px; cursor:pointer;">Fechar</button>
+                </div>
             </div>
         `;
+        
         const div = createOverlay(settingsHtml);
-        document.getElementById('settings-save').onclick = async () => { const updatedProvider = { id: aiClient.currentProviderId, key: document.getElementById('settings-provider-key').value }; await aiClient.saveProvider(aiClient.currentProviderId, updatedProvider); div.remove(); setActiveNav('nav-chat'); };
-        document.getElementById('settings-close').onclick = () => { div.remove(); setActiveNav('nav-chat'); };
+
+        // --- Settings Event Listeners ---
+        const providerSelect = document.getElementById('settings-provider-select');
+        const modelSelect = document.getElementById('settings-model-select');
+        const customModelArea = document.getElementById('custom-model-area');
+
+        providerSelect.onchange = async () => {
+            const newProviderId = providerSelect.value;
+            await aiClient.setProvider(newProviderId);
+            div.remove();
+            showSettings(); // Refresh UI for new provider
+        };
+
+        modelSelect.onchange = () => {
+            customModelArea.style.display = modelSelect.value === 'custom' ? 'block' : 'none';
+        };
+
+        document.getElementById('add-persona-btn').onclick = () => {
+            const title = prompt("Nome da Persona (ex: Design Gemini):");
+            if (title) {
+                const desc = prompt("Descrição/Comportamento:");
+                const icon = prompt("Emoji/Ícone:");
+                modelManager.addModel({ title, description: desc, icon: icon || '🤖' });
+                div.remove(); showSettings();
+            }
+        };
+
+        div.querySelectorAll('.persona-card').forEach(card => {
+            card.onclick = (e) => {
+                if (e.target.classList.contains('delete-persona')) return;
+                modelManager.setActiveModel(card.dataset.id);
+                div.remove(); showSettings();
+            };
+        });
+
+        div.querySelectorAll('.delete-persona').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm("Excluir esta persona?")) {
+                    modelManager.deleteModel(btn.dataset.id);
+                    div.remove(); showSettings();
+                }
+            };
+        });
+
+        document.getElementById('settings-save').onclick = async () => {
+            const providerId = providerSelect.value;
+            const key = document.getElementById('settings-provider-key').value;
+            const url = document.getElementById('settings-provider-url')?.value;
+            const model = modelSelect.value === 'custom' ? document.getElementById('settings-custom-model').value : modelSelect.value;
+
+            await aiClient.saveProvider(providerId, { key, url });
+            await aiClient.setModel(model);
+            await aiClient.setProvider(providerId);
+            
+            div.remove();
+            setActiveNav('nav-chat');
+        };
+
+        document.getElementById('settings-close').onclick = () => {
+            div.remove();
+            setActiveNav('nav-chat');
+        };
     }
 
     async function showTraining() {
@@ -461,7 +581,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const updateTab = (tab) => {
             const contentArea = document.getElementById('training-content-area'); const formArea = document.getElementById('training-add-form'); const items = trainingManager.categories[tab] || [];
             contentArea.innerHTML = items.length ? items.map(item => `<div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin-bottom: 5px; display: flex; justify-content: space-between;"><span>${item.title || item.name}</span><button class="aura-remove-item" data-id="${item.id}" style="background:none; border:none; color:#ef4444; cursor:pointer;">✕</button></div>`).join('') : '<p style="font-size: 12px; color: var(--aura-text-muted);">Nenhum item adicionado.</p>';
-            if (tab === 'text') { formArea.innerHTML = `<input type="text" id="add-title" placeholder="Título/Nome" style="width:100%; margin-bottom:5px;"><textarea id="add-content" placeholder="Cole textos, regras, instruções..." style="width:100%; height:80px;"></textarea><button id="add-btn" style="width:100%; padding:8px; background:var(--aura-gradient); border:none; border-radius:6px; color:white; cursor:pointer;">Adicionar Texto</button>`; }
+            if (tab === 'text') { formArea.innerHTML = `<input type="text" id="add-title" placeholder="Título/Nome" style="width:100%; margin-bottom:5px;"><textarea id="add-content" placeholder="Cole textos, regras, documentos..." style="width:100%; height:80px;"></textarea><button id="add-btn" style="width:100%; padding:8px; background:var(--aura-gradient); border:none; border-radius:6px; color:white; cursor:pointer;">Adicionar Texto</button>`; }
             else if (tab === 'files') { formArea.innerHTML = `<input type="file" id="add-file" style="width:100%; margin-bottom:5px;"><button id="add-btn" style="width:100%; padding:8px; background:var(--aura-gradient); border:none; border-radius:6px; color:white; cursor:pointer;">Adicionar Arquivo</button>`; }
             else { formArea.innerHTML = `<input type="text" id="add-title" placeholder="Nome desta fonte" style="width:100%; margin-bottom:5px;"><textarea id="add-content" placeholder="Cole o conteúdo ou descreva a fonte..." style="width:100%; height:60px;"></textarea><button id="add-btn" style="width:100%; padding:8px; background:var(--aura-gradient); border:none; border-radius:6px; color:white; cursor:pointer;">Adicionar Fonte</button>`; }
             document.getElementById('add-btn').onclick = async () => {
