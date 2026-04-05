@@ -337,8 +337,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 fullResponse = full;
                 let responseText = contentDiv.querySelector('.aura-response-text');
-                if (!responseText) { responseText = document.createElement('div'); responseText.className = 'aura-response-text'; contentDiv.appendChild(responseText); }
-                responseText.textContent = full;
+                if (!responseText) { 
+                    responseText = document.createElement('div'); 
+                    responseText.className = 'aura-response-text'; 
+                    contentDiv.appendChild(responseText); 
+                }
+                // Use marked.js for Rich Text rendering
+                if (typeof marked !== 'undefined') {
+                    responseText.innerHTML = marked.parse(full);
+                } else {
+                    responseText.textContent = full;
+                }
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             });
 

@@ -149,9 +149,65 @@ body {
     padding: 12px 16px;
     border-radius: 12px;
     font-size: 14px;
-    line-height: 1.5;
+    line-height: 1.6;
     position: relative;
     animation: auraFadeIn 0.3s ease-out;
+}
+
+.aura-response-text h1, .aura-response-text h2, .aura-response-text h3 {
+    color: var(--aura-accent);
+    margin: 15px 0 10px 0;
+    font-weight: 700;
+}
+
+.aura-response-text h1 { font-size: 1.4em; }
+.aura-response-text h2 { font-size: 1.2em; }
+.aura-response-text h3 { font-size: 1.1em; }
+
+.aura-response-text p {
+    margin-bottom: 10px;
+}
+
+.aura-response-text ul, .aura-response-text ol {
+    margin-bottom: 10px;
+    padding-left: 20px;
+}
+
+.aura-response-text li {
+    margin-bottom: 5px;
+}
+
+.aura-response-text blockquote {
+    border-left: 3px solid var(--aura-accent);
+    padding-left: 15px;
+    margin: 10px 0;
+    font-style: italic;
+    color: var(--aura-text-muted);
+    background: rgba(255,255,255,0.03);
+    padding: 10px 15px;
+    border-radius: 0 8px 8px 0;
+}
+
+.aura-response-text code {
+    background: rgba(255,255,255,0.1);
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
+.aura-response-text pre {
+    background: #1e293b;
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 10px;
+    border: 1px solid var(--aura-border);
+}
+
+.aura-response-text pre code {
+    background: transparent;
+    padding: 0;
 }
 
 .aura-message-user {
