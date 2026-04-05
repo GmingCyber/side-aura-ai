@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (id === 'nav-chat') closeAllOverlays();
             else if (id === 'nav-notes') showNotes();
             else if (id === 'nav-training') showTraining();
-            else if (id === 'nav-config') showSettings();
+            else if (id === 'nav-settings') showSettings();
         };
     });
 
@@ -442,9 +442,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- OVERLAY SCREENS ---
     async function showSettings() {
-        const config = aiClient.config;
         const providers = aiClient.providers;
-        const currentProvider = providers[config.provider] || providers['openrouter'];
+        const currentProviderId = aiClient.currentProviderId;
+        const currentProvider = aiClient.getProvider();
+        const currentModel = aiClient.currentModel;
         const models = modelManager.models;
         const activeModelId = modelManager.activeModelId;
 
@@ -455,7 +456,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="aura-setting-item">
                     <label>Provedor de IA</label>
                     <select id="settings-provider-select">
-                        ${Object.keys(providers).map(p => `<option value="${p}" ${config.provider === p ? 'selected' : ''}>${providers[p].name}</option>`).join('')}
+                        ${providers.map(p => `<option value="${p.id}" ${currentProviderId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
                     </select>
                 </div>
 
@@ -464,7 +465,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <input type="password" id="settings-provider-key" value="${currentProvider.key || ''}" placeholder="Insira sua chave">
                 </div>
 
-                ${config.provider === 'custom' ? `
+                ${currentProviderId === 'custom' ? `
                 <div class="aura-setting-item">
                     <label>URL do Provedor</label>
                     <input type="text" id="settings-provider-url" value="${currentProvider.url || ''}" placeholder="https://api.exemplo.com/v1">
@@ -474,14 +475,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="aura-setting-item">
                     <label>Modelo de IA</label>
                     <select id="settings-model-select">
-                        ${currentProvider.models.map(m => `<option value="${m.id}" ${config.model === m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
-                        <option value="custom" ${!currentProvider.models.find(m => m.id === config.model) ? 'selected' : ''}>Custom Model ID</option>
+                        ${(currentProvider.models || []).map(m => {
+                            const mId = typeof m === 'string' ? m : m.id;
+                            const mName = typeof m === 'string' ? m : m.name;
+                            return `<option value="${mId}" ${currentModel === mId ? 'selected' : ''}>${mName}</option>`;
+                        }).join('')}
+                        <option value="custom" ${!(currentProvider.models || []).some(m => (typeof m === 'string' ? m : m.id) === currentModel) ? 'selected' : ''}>Custom Model ID</option>
                     </select>
                 </div>
 
-                <div id="custom-model-area" class="aura-setting-item" style="display: ${!currentProvider.models.find(m => m.id === config.model) ? 'block' : 'none'};">
+                <div id="custom-model-area" class="aura-setting-item" style="display: ${!(currentProvider.models || []).some(m => (typeof m === 'string' ? m : m.id) === currentModel) ? 'block' : 'none'};">
                     <label>Custom Model ID</label>
-                    <input type="text" id="settings-custom-model" value="${config.model}" placeholder="ex: anthropic/claude-3-opus">
+                    <input type="text" id="settings-custom-model" value="${currentModel}" placeholder="ex: anthropic/claude-3-opus">
                 </div>
 
                 <div class="aura-divider" style="margin: 20px 0; border-top: 1px solid var(--aura-border);"></div>
