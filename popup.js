@@ -335,17 +335,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         thinkDiv.innerHTML = `
             <div class="aura-thought-header">
                 <span class="aura-thought-timer">🧠 Pensando...</span>
-                <span class="aura-thought-arrow">▼</span>
+                <span class="aura-thought-arrow">▲</span>
             </div>
-            <div class="aura-thought-body" style="display: none;">
+            <div class="aura-thought-body" style="display: block;">
                 ${data.steps.map(step => `
                     <div class="aura-thought-step">
                         <div class="aura-thought-step-header">
                             <span class="aura-thought-step-icon">${step.icon}</span>
                             <span class="aura-thought-step-title">${step.title}</span>
-                            <span class="aura-thought-step-toggle">▼</span>
+                            <span class="aura-thought-step-toggle">▲</span>
                         </div>
-                        <div class="aura-thought-step-content" style="display: none;">
+                        <div class="aura-thought-step-content" style="display: block;">
                             ${step.content}
                             ${step.isSearch ? `
                                 <div class="aura-search-box">
@@ -463,7 +463,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 <div class="aura-setting-item">
                     <label>API Key</label>
-                    <input type="password" id="settings-provider-key" value="${currentProvider.key || ''}" placeholder="Insira sua chave">
+                    <div class="aura-input-with-icon">
+                        <input type="password" id="settings-provider-key" value="${currentProvider.key || ''}" placeholder="Insira sua chave">
+                        <button id="toggle-key-visibility" class="aura-input-icon-btn" title="Ver/Ocultar">👁️</button>
+                    </div>
+                    <div class="aura-provider-url-hint">
+                        🔗 <a href="${getProviderUrl(currentProviderId)}" target="_blank">${getProviderUrl(currentProviderId).replace('https://', '')}</a>
+                    </div>
                 </div>
 
                 ${currentProviderId === 'custom' ? `
@@ -518,7 +524,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const div = createOverlay(settingsHtml);
 
+        function getProviderUrl(id) {
+            const urls = {
+                'openrouter': 'https://openrouter.ai/keys',
+                'google': 'https://aistudio.google.com/app/apikey',
+                'anthropic': 'https://console.anthropic.com/settings/keys',
+                'openai': 'https://platform.openai.com/api-keys',
+                'groq': 'https://console.groq.com/keys',
+                'deepseek': 'https://platform.deepseek.com/api_keys',
+                'custom': 'https://aura-ai.com'
+            };
+            return urls[id] || 'https://aura-ai.com';
+        }
+
         // --- Settings Event Listeners ---
+        const toggleKeyBtn = document.getElementById('toggle-key-visibility');
+        const keyInput = document.getElementById('settings-provider-key');
+        if (toggleKeyBtn && keyInput) {
+            toggleKeyBtn.onclick = () => {
+                const isPassword = keyInput.type === 'password';
+                keyInput.type = isPassword ? 'text' : 'password';
+                toggleKeyBtn.innerText = isPassword ? '🙈' : '👁️';
+            };
+        }
+
         const providerSelect = document.getElementById('settings-provider-select');
         const modelSelect = document.getElementById('settings-model-select');
         const customModelArea = document.getElementById('custom-model-area');

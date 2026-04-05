@@ -483,3 +483,137 @@ body {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* API Key Input with Icon */
+.aura-input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.aura-input-with-icon input {
+    padding-right: 45px !important;
+}
+
+.aura-input-icon-btn {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: var(--aura-text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--aura-transition);
+}
+
+.aura-input-icon-btn:hover {
+    color: var(--aura-text);
+    transform: scale(1.1);
+}
+
+.aura-provider-url-hint {
+    font-size: 11px;
+    margin-top: 6px;
+    color: var(--aura-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.aura-provider-url-hint a {
+    color: var(--aura-primary-light);
+    text-decoration: none;
+    transition: var(--aura-transition);
+}
+
+.aura-provider-url-hint a:hover {
+    text-decoration: underline;
+    filter: brightness(1.2);
+}
+
+/* Thinking Mode Detailed Styles */
+.aura-thought-container {
+    margin-bottom: 15px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--aura-border);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.aura-thought-header {
+    padding: 10px 15px;
+    background: rgba(99, 102, 241, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: var(--aura-transition);
+}
+
+.aura-thought-header:hover {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.aura-thought-timer {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--aura-primary-light);
+}
+
+.aura-thought-arrow {
+    font-size: 10px;
+    color: var(--aura-text-muted);
+}
+
+.aura-thought-body {
+    padding: 10px;
+    border-top: 1px solid var(--aura-border);
+}
+
+.aura-thought-step {
+    margin-bottom: 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+
+.aura-thought-step-header {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: var(--aura-transition);
+}
+
+.aura-thought-step-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.aura-thought-step-icon {
+    font-size: 14px;
+}
+
+.aura-thought-step-title {
+    flex: 1;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--aura-text);
+}
+
+.aura-thought-step-toggle {
+    font-size: 9px;
+    color: var(--aura-text-muted);
+}
+
+.aura-thought-step-content {
+    padding: 10px 12px 12px 36px;
+    font-size: 12px;
+    color: var(--aura-text-muted);
+    line-height: 1.5;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
