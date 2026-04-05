@@ -279,7 +279,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error('Chat Error:', error);
             completeThinking(thinkingId, 0);
-            appendMessage('AURA', 'Desculpe, tive um erro ao processar sua mensagem. Verifique sua API Key nas configurações.', false);
+            const errorMsg = error.message || 'Erro desconhecido';
+            appendMessage('AURA', `❌ **Erro de Conexão:** ${errorMsg}\n\nVerifique se a sua API Key, o Provedor e o Modelo estão corretos nas configurações.`, false);
         }
     }
 

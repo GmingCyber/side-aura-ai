@@ -117,6 +117,11 @@ class AuraAIClient {
         return this.providers.find(p => p.id === this.currentProviderId) || this.providers[0];
     }
 
+    async sendMessage(text, onStream = null) {
+        const messages = [{ role: 'user', content: text }];
+        return this.chat(messages, onStream);
+    }
+
     async chat(messages, onStream = null) {
         await this.loadConfig();
         const provider = this.getProvider();
@@ -137,13 +142,21 @@ class AuraAIClient {
         }
 
         try {
+            // Anthropic requires a different header and body structure if not using their OpenAI-compatible endpoint
+            if (provider.id === 'anthropic' && !provider.url.includes('openai')) {
+                headers['x-api-key'] = provider.key;
+                headers['anthropic-version'] = '2023-06-01';
+                delete headers['Authorization'];
+            }
+
             const response = await fetch(`${provider.url}/chat/completions`, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify({
                     model: model,
                     messages: messages,
-                    stream: !!onStream
+                    stream: !!onStream,
+                    max_tokens: 4096
                 })
             });
 
