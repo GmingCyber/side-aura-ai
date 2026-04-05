@@ -187,6 +187,105 @@
     transform: translateY(-2px);
 }
 
+/* Live Preview & Resizable Window */
+.aura-live-preview {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 450px;
+    height: 100vh;
+    background: var(--aura-bg);
+    border-left: 1px solid var(--aura-border);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    transition: width 0.1s ease;
+}
+
+.aura-live-preview.fullscreen {
+    width: 100vw !important;
+}
+
+.aura-preview-header {
+    padding: 15px 20px;
+    background: var(--aura-panel);
+    border-bottom: 1px solid var(--aura-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.aura-preview-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--aura-accent);
+}
+
+.aura-preview-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.aura-preview-actions button {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--aura-border);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.aura-preview-toolbar {
+    padding: 10px 20px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--aura-border);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.aura-preview-toolbar button, .aura-preview-toolbar select, .aura-preview-toolbar input {
+    background: #2a2d3e;
+    border: 1px solid var(--aura-border);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.aura-preview-editor {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    outline: none;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #e0e0e0;
+}
+
+.aura-preview-resizer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 5px;
+    height: 100%;
+    cursor: ew-resize;
+    background: transparent;
+}
+
+.aura-preview-resizer:hover {
+    background: var(--aura-accent);
+}
+
+.aura-step-extra {
+    margin-top: 8px;
+    padding: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border: 1px solid var(--aura-border);
+}
+
 /* Animations */
 @keyframes slideDown {
     from { opacity: 0; transform: translateY(-10px); }

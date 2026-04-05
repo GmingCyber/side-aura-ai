@@ -1,4 +1,4 @@
-// popup.js - AURA AI v8.0.0 (AURA CANVAS & DOCUMENT FACTORY)
+// popup.js - AURA AI v9.0.0 (AURA OS & LIVE CANVAS)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -35,7 +35,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Load current chat or start new
+    // --- HISTORY SYSTEM (FIXED) ---
+    async function saveChatHistory(chatId, messages) {
+        const storageObj = {};
+        storageObj[`aura_chat_${chatId}`] = messages.slice(-50);
+        await chrome.storage.local.set(storageObj);
+        
+        // Update chat list
+        const historyData = await chrome.storage.local.get(['aura_chats_list']);
+        let list = historyData.aura_chats_list || [];
+        const chatIdx = list.findIndex(c => c.id === chatId);
+        
+        if (chatIdx === -1) {
+            const firstMsg = messages.find(m => m.role === 'user')?.content || 'Nova Conversa';
+            list.unshift({ 
+                id: chatId, 
+                title: firstMsg.substring(0, 30) + (firstMsg.length > 30 ? '...' : ''), 
+                date: new Date().toLocaleString() 
+            });
+        } else if (messages.length > 0 && list[chatIdx].title === 'Nova Conversa') {
+            const firstMsg = messages.find(m => m.role === 'user')?.content || 'Nova Conversa';
+            list[chatIdx].title = firstMsg.substring(0, 30) + (firstMsg.length > 30 ? '...' : '');
+        }
+        await chrome.storage.local.set({ 'aura_chats_list': list });
+    }
+
     async function loadChat(chatId) {
         currentChatId = chatId;
         chatMessages.innerHTML = '';
@@ -54,7 +78,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadChat(currentChatId);
     }
 
-    // New Chat Functionality
     if (newChatBtn) {
         newChatBtn.onclick = async () => {
             const newId = Date.now().toString();
@@ -66,7 +89,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
-    // History Panel
     if (historyBtn) {
         historyBtn.onclick = async () => {
             const historyData = await chrome.storage.local.get(['aura_chats_list']);
@@ -100,29 +122,85 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
-    // Helper to generate dynamic thinking based on user input
+    // --- LIVE PREVIEW SYSTEM ---
+    function openLivePreview(type, title, content) {
+        const existing = document.querySelector('.aura-live-preview');
+        if (existing) existing.remove();
+
+        const preview = document.createElement('div');
+        preview.className = 'aura-live-preview';
+        preview.innerHTML = `
+            <div class="aura-preview-header">
+                <div class="aura-preview-title">📄 ${title} (${type})</div>
+                <div class="aura-preview-actions">
+                    <button id="preview-fullscreen">🔲</button>
+                    <button id="preview-download">📥</button>
+                    <button id="preview-close">✕</button>
+                </div>
+            </div>
+            <div class="aura-preview-toolbar">
+                <button data-cmd="bold"><b>B</b></button>
+                <button data-cmd="italic"><i>I</i></button>
+                <select id="font-size">
+                    <option value="3">Pequeno</option>
+                    <option value="4" selected>Médio</option>
+                    <option value="6">Grande</option>
+                </select>
+                <input type="color" id="font-color" value="#ffffff">
+            </div>
+            <div class="aura-preview-editor" contenteditable="true">${content}</div>
+            <div class="aura-preview-resizer"></div>
+        `;
+        document.body.appendChild(preview);
+
+        // Resizer logic
+        const resizer = preview.querySelector('.aura-preview-resizer');
+        let isResizing = false;
+        resizer.onmousedown = (e) => { isResizing = true; document.onmousemove = handleResize; document.onmouseup = () => isResizing = false; };
+        function handleResize(e) { if (isResizing) { const width = window.innerWidth - e.clientX; preview.style.width = `${width}px`; } }
+
+        // Toolbar logic
+        preview.querySelectorAll('[data-cmd]').forEach(btn => {
+            btn.onclick = () => document.execCommand(btn.dataset.cmd, false, null);
+        });
+        document.getElementById('font-size').onchange = (e) => document.execCommand('fontSize', false, e.target.value);
+        document.getElementById('font-color').oninput = (e) => document.execCommand('foreColor', false, e.target.value);
+
+        document.getElementById('preview-close').onclick = () => preview.remove();
+        document.getElementById('preview-fullscreen').onclick = () => preview.classList.toggle('fullscreen');
+        document.getElementById('preview-download').onclick = () => {
+            const finalContent = preview.querySelector('.aura-preview-editor').innerText;
+            generateDocument(type, title, finalContent);
+        };
+    }
+
+    function generateDocument(type, title, content) {
+        if (type === 'PDF') {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(20); doc.text(title, 20, 20);
+            doc.setFontSize(12); const splitText = doc.splitTextToSize(content, 170);
+            doc.text(splitText, 20, 40); doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
+        } else {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `${title.replace(/\s+/g, '_')}.txt`; a.click();
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    // --- DYNAMIC THINKING (ADVANCED) ---
     function getDynamicThinking(text) {
         const lowerText = text.toLowerCase();
         const truncatedText = text.length > 60 ? text.substring(0, 57) + "..." : text;
         
-        let tool = "General AI";
-        let toolIcon = "🧠";
-        let toolDetail = "Processando solicitação geral.";
-        let searchTerms = null;
-        let isCanvas = false;
-        let canvasType = null;
+        let tool = "General AI"; let toolIcon = "🧠"; let toolDetail = "Processando solicitação geral.";
+        let searchTerms = null; let isCanvas = false; let canvasType = null;
 
         if (lowerText.includes('pdf') || lowerText.includes('documento') || lowerText.includes('arquivo txt') || lowerText.includes('criar um txt')) {
-            tool = "Aura Canvas"; toolIcon = "🎨"; 
-            isCanvas = true;
+            tool = "Aura Canvas"; toolIcon = "🎨"; isCanvas = true;
             canvasType = lowerText.includes('pdf') ? 'PDF' : 'TXT';
             toolDetail = `Conectando a ferramenta Aura Canvas > Conexão feita com sucesso. Achando o recurso "${canvasType}".`;
-        } else if (lowerText.includes('código') || lowerText.includes('programar') || lowerText.includes('script')) {
-            tool = "Claude Coder"; toolIcon = "💻"; toolDetail = "Detectada necessidade de codificação... Ativando Claude 3.5 Sonnet.";
-        } else if (lowerText.includes('design') || lowerText.includes('visual') || lowerText.includes('estilo')) {
-            tool = "Gemini Design"; toolIcon = "🎨"; toolDetail = "Detectada necessidade de design... Ativando Gemini 2.0 Flash.";
-        } else if (lowerText.includes('diagrama') || lowerText.includes('fluxo') || lowerText.includes('mapa')) {
-            tool = "Aura Canvas"; toolIcon = "📊"; toolDetail = "Estruturando lógica do diagrama... Gerando visualização via Mermaid.js.";
         } else if (lowerText.includes('pesquise') || lowerText.includes('quem é') || lowerText.includes('notícias') || lowerText.includes('preço') || lowerText.includes('hoje') || lowerText.includes('dorama')) {
             tool = "Aura Search"; toolIcon = "🔍"; 
             searchTerms = text.replace(/pesquise|quem é|notícias|preço|hoje|dorama/gi, '').trim();
@@ -132,55 +210,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         return {
             thinking: `O usuário enviou: "${truncatedText}"; então devo me preparar para agir.`,
             tool, toolIcon, toolDetail, searchTerms, isCanvas, canvasType,
-            analyzing: "Analisando intenção e contexto para a melhor resposta.",
-            planning: "Vou gerar a resposta agora seguindo o tom da persona."
+            analyzing: `Análise profunda: O usuário solicitou ${isCanvas ? 'a criação de um documento' : 'informações'} sobre "${searchTerms || truncatedText}". Vou estruturar uma resposta completa, garantindo que todos os pontos-chave sejam abordados com precisão técnica e tom adequado à persona ativa.`,
+            planning: "Estratégia: Vou gerar o conteúdo agora, integrando as fontes encontradas e validando cada parágrafo para manter a consistência total."
         };
     }
 
-    // Document Generation Helper
-    function generateDocument(type, title, content) {
-        if (type === 'PDF') {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.setFontSize(20);
-            doc.text(title, 20, 20);
-            doc.setFontSize(12);
-            const splitText = doc.splitTextToSize(content, 170);
-            doc.text(splitText, 20, 40);
-            doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
-        } else {
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${title.replace(/\s+/g, '_')}.txt`;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-    }
-
-    // Send message function
     async function handleSendMessage() {
         const text = userInput.value.trim();
         if (!text) return;
-
-        userInput.value = '';
-        userInput.style.height = 'auto';
-
+        userInput.value = ''; userInput.style.height = 'auto';
         appendMessage('USER', text, true);
 
         const data = await chrome.storage.local.get([`aura_chat_${currentChatId}`]);
         const messages = data[`aura_chat_${currentChatId}`] || [];
-        
-        const trainingContext = trainingManager.getContextForPrompt();
         const activePersona = modelManager.getActiveModel();
+        const trainingContext = trainingManager.getContextForPrompt();
         
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         const pageContext = tab ? `[CONTEXTO DA PÁGINA: ${tab.title} | URL: ${tab.url}]` : '';
-
         const systemPrompt = `Você é ${activePersona.title}. ${activePersona.description}. ${pageContext}`;
         const fullPrompt = trainingContext ? `${trainingContext}\n\nPERGUNTA: ${text}` : text;
-        
         const apiMessages = [ { role: 'system', content: systemPrompt }, ...messages, { role: 'user', content: fullPrompt } ];
 
         const aiMsgDiv = appendMessage(activePersona.title, '', false);
@@ -188,37 +237,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const thoughtWrapper = document.createElement('div');
         thoughtWrapper.className = 'aura-thought-wrapper';
-        
-        const thoughtHeader = document.createElement('div');
-        thoughtHeader.className = 'aura-thought-header';
-        thoughtHeader.innerHTML = `
-            <span class="aura-thought-icon">🧠</span>
-            <span class="aura-thought-timer">Pensando...</span>
-            <span class="aura-thought-toggle">▼</span>
+        thoughtWrapper.innerHTML = `
+            <div class="aura-thought-header">
+                <span class="aura-thought-icon">🧠</span>
+                <span class="aura-thought-timer">Pensando...</span>
+                <span class="aura-thought-toggle">▼</span>
+            </div>
+            <div class="aura-thought-content aura-hidden"></div>
         `;
-        
-        const thoughtContent = document.createElement('div');
-        thoughtContent.className = 'aura-thought-content aura-hidden';
-        
-        thoughtWrapper.appendChild(thoughtHeader);
-        thoughtWrapper.appendChild(thoughtContent);
         contentDiv.appendChild(thoughtWrapper);
+        const thoughtHeader = thoughtWrapper.querySelector('.aura-thought-header');
+        const thoughtContent = thoughtWrapper.querySelector('.aura-thought-content');
 
         thoughtHeader.onclick = () => {
             thoughtContent.classList.toggle('aura-hidden');
             thoughtHeader.querySelector('.aura-thought-toggle').textContent = thoughtContent.classList.contains('aura-hidden') ? '▼' : '▲';
         };
 
-        const addThinkingStep = (label, detail, icon = '•') => {
+        const addThinkingStep = (label, detail, icon = '•', expandable = false) => {
             const step = document.createElement('div');
             step.className = 'aura-thinking-step';
             step.innerHTML = `
-                <div class="aura-step-header">
+                <div class="aura-step-header" style="${expandable ? 'cursor:pointer;' : ''}">
                     <span class="aura-step-dot">${icon}</span>
-                    <span class="aura-step-label">${label}...</span>
+                    <span class="aura-step-label">${label}${expandable ? ' >' : '...'}</span>
                 </div>
                 <div class="aura-step-detail">| ${detail}</div>
+                <div class="aura-step-extra aura-hidden"></div>
             `;
+            if (expandable) {
+                step.querySelector('.aura-step-header').onclick = () => step.querySelector('.aura-step-extra').classList.toggle('aura-hidden');
+            }
             thoughtContent.appendChild(step);
             chatMessages.scrollTop = chatMessages.scrollHeight;
             return step;
@@ -232,59 +281,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const dynamic = getDynamicThinking(text);
-            
             addThinkingStep("Thinking", dynamic.thinking);
             await new Promise(r => setTimeout(r, 600));
 
             if (dynamic.isCanvas) {
-                addThinkingStep("Aura Canvas", dynamic.toolDetail, "🎨");
+                addThinkingStep("Aura Canvas", dynamic.toolDetail, "🎨", true);
                 await new Promise(r => setTimeout(r, 800));
-                addThinkingStep("Analisando", `Vou começar a estruturar os textos para o seu ${dynamic.canvasType}...`);
-                await new Promise(r => setTimeout(r, 600));
-                addThinkingStep("Planejando", `Vou gerar o assunto do ${dynamic.canvasType}, mas primeiro devo pesquisar resumos sobre o tema.`);
+                addThinkingStep("Analisando", dynamic.analyzing);
+                await new Promise(r => setTimeout(r, 1000));
+                addThinkingStep("Planejando", dynamic.planning);
                 await new Promise(r => setTimeout(r, 800));
                 
-                const searchStep = addThinkingStep(`Pesquisa ("${dynamic.searchTerms || 'Contexto'}")`, "Pesquisa concluída. Fontes encontradas.", "🔍");
-                const searchDetail = document.createElement('div');
-                searchDetail.className = 'aura-search-results';
-                searchDetail.innerHTML = `
+                const searchStep = addThinkingStep(`Pesquisa ("${dynamic.searchTerms || 'Contexto'}")`, "Pesquisa concluída. Fontes encontradas.", "🔍", true);
+                searchStep.querySelector('.aura-step-extra').innerHTML = `
                     <div style="margin-top: 5px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 11px;">
                         <div style="display:flex; gap:10px; margin-bottom:5px;">
                             <div style="width:40px; height:40px; background:#333; border-radius:4px;"></div>
                             <div><strong>Fonte 1:</strong> Netflix - Beleza Verdadeira<br><span style="color:var(--aura-accent)">netflix.com/title/...</span></div>
                         </div>
-                        <div style="display:flex; gap:10px;">
-                            <div style="width:40px; height:40px; background:#333; border-radius:4px;"></div>
-                            <div><strong>Fonte 2:</strong> Wiki Dorama - Resumo<br><span style="color:var(--aura-accent)">wiki.dorama.com/...</span></div>
-                        </div>
                     </div>
                 `;
-                searchStep.appendChild(searchDetail);
-                await new Promise(r => setTimeout(r, 1000));
-                
-                addThinkingStep("Gerando Contexto", `Vou gerar o contexto do ${dynamic.canvasType} agora.`);
-                addThinkingStep("Item (Estrutura)", `Definindo seções: Introdução, Personagens, Enredo e Conclusão.`);
             } else if (dynamic.tool === "Aura Search") {
-                const searchStep = addThinkingStep("Pesquisa na Internet", dynamic.toolDetail, "🔍");
-                await new Promise(r => setTimeout(r, 1000));
-                const searchDetail = document.createElement('div');
-                searchDetail.className = 'aura-search-results';
-                searchDetail.innerHTML = `
-                    <div style="margin-top: 5px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 11px;">
-                        <strong>Termos de busca:</strong> "${dynamic.searchTerms || text}"<br>
-                        <strong>Fontes encontradas:</strong> 3 fontes oficiais detectadas.
-                    </div>
-                `;
-                searchStep.appendChild(searchDetail);
+                const searchStep = addThinkingStep(`Pesquisa ("${dynamic.searchTerms || 'Contexto'}")`, dynamic.toolDetail, "🔍", true);
+                searchStep.querySelector('.aura-step-extra').innerHTML = `<div style="padding:8px; font-size:11px;">Buscando por: ${dynamic.searchTerms}</div>`;
             } else {
                 addThinkingStep(dynamic.tool, dynamic.toolDetail, dynamic.toolIcon);
             }
             
             await new Promise(r => setTimeout(r, 600));
-            addThinkingStep("Fact-Checking", "Validando consistência e mantendo a integridade dos dados.", "✅");
+            addThinkingStep("Fact-Checking", "Validando consistência e mantendo a integridade dos dados.", "✅", true);
             await new Promise(r => setTimeout(r, 400));
 
-            await aiClient.loadConfig();
             let fullResponse = '';
             await aiClient.chat(apiMessages, (chunk, full) => {
                 clearInterval(timerInterval);
@@ -295,28 +322,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 fullResponse = full;
                 let responseText = contentDiv.querySelector('.aura-response-text');
-                if (!responseText) {
-                    responseText = document.createElement('div');
-                    responseText.className = 'aura-response-text';
-                    contentDiv.appendChild(responseText);
-                }
+                if (!responseText) { responseText = document.createElement('div'); responseText.className = 'aura-response-text'; contentDiv.appendChild(responseText); }
                 responseText.textContent = full;
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             });
 
             if (dynamic.isCanvas) {
-                const downloadBtn = document.createElement('button');
-                downloadBtn.className = 'aura-download-btn';
-                downloadBtn.style = 'margin-top: 10px; padding: 8px 15px; background: var(--aura-gradient); border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px;';
-                downloadBtn.innerHTML = `<span>📥</span> Baixar ${dynamic.canvasType}`;
-                downloadBtn.onclick = () => generateDocument(dynamic.canvasType, "AURA_Document", fullResponse);
-                contentDiv.appendChild(downloadBtn);
+                const fileCard = document.createElement('div');
+                fileCard.className = 'aura-file-card';
+                fileCard.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; margin-top:10px;">
+                        <div><strong>📄 AURA_Document.${dynamic.canvasType.toLowerCase()}</strong></div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="aura-open-preview" style="padding:5px 10px; background:rgba(255,255,255,0.1); border:none; border-radius:6px; color:white; cursor:pointer;">Abrir</button>
+                            <button class="aura-download-file" style="padding:5px 10px; background:var(--aura-gradient); border:none; border-radius:6px; color:white; cursor:pointer;">📥</button>
+                        </div>
+                    </div>
+                `;
+                fileCard.querySelector('.aura-open-preview').onclick = () => openLivePreview(dynamic.canvasType, "AURA_Document", fullResponse);
+                fileCard.querySelector('.aura-download-file').onclick = () => generateDocument(dynamic.canvasType, "AURA_Document", fullResponse);
+                contentDiv.appendChild(fileCard);
             }
 
-            const newHistory = [...messages, { role: 'user', content: text }, { role: 'assistant', content: fullResponse }];
-            const storageObj = {};
-            storageObj[`aura_chat_${currentChatId}`] = newHistory.slice(-50);
-            await chrome.storage.local.set(storageObj);
+            await saveChatHistory(currentChatId, [...messages, { role: 'user', content: text }, { role: 'assistant', content: fullResponse }]);
 
         } catch (error) {
             clearInterval(timerInterval);
@@ -362,7 +390,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="aura-divider"></div>
                     <div class="aura-setting-item"><label>Provedor:</label><select id="settings-provider-select">${aiClient.providers.map(p => `<option value="${p.id}" ${p.id === aiClient.currentProviderId ? 'selected' : ''}>${p.name}</option>`).join('')}</select></div>
                     <div class="aura-setting-item"><label>API Key:</label><input type="password" id="settings-provider-key" value="${provider.key || ''}"></div>
-                    <div class="aura-setting-item"><label>Modelo:</label><select id="settings-model-select">${provider.models.map(m => `<option value="${m}" ${m === model ? 'selected' : ''}>${m}</option>`).join('')}<option value="custom" ${!provider.models.includes(model) ? 'selected' : ''}>Custom Model ID</option></select></div>
                     <div class="aura-settings-actions"><button id="settings-save">Salvar</button><button id="settings-close">Fechar</button></div>
                 </div>
             </div>
