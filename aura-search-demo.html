@@ -3,244 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA Search - Demonstração</title>
+    <title>AURA Search - Demonstração v12.0.0</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
     <style>
-        :root {
-            --aura-bg: #0f111a;
-            --aura-panel: #1a1d2e;
-            --aura-accent: #7c4dff;
-            --aura-gradient: linear-gradient(135deg, #7c4dff 0%, #448aff 100%);
-            --aura-text: #ffffff;
-            --aura-text-muted: #a0a0a0;
-            --aura-border: rgba(255, 255, 255, 0.1);
-        }
-
-        body {
-            background-color: var(--aura-bg);
-            color: var(--aura-text);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-
-        .demo-container {
-            width: 90%;
-            max-width: 800px;
-            background: var(--aura-panel);
-            border: 1px solid var(--aura-border);
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .demo-container::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(124, 77, 255, 0.1) 0%, transparent 70%);
-            z-index: 0;
-            pointer-events: none;
-        }
-
-        .header {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .logo {
-            font-size: 48px;
-            margin-bottom: 10px;
-            filter: drop-shadow(0 0 15px var(--aura-accent));
-        }
-
-        h1 {
-            font-size: 32px;
-            font-weight: 800;
-            background: var(--aura-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin: 0;
-        }
-
-        .search-box {
-            position: relative;
-            z-index: 1;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--aura-border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: 0.3s;
-        }
-
-        .search-box:hover {
-            border-color: var(--aura-accent);
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .search-icon {
-            font-size: 24px;
-            color: var(--aura-accent);
-        }
-
-        .search-text {
-            font-size: 18px;
-            color: var(--aura-text-muted);
-            flex: 1;
-        }
-
-        .thought-demo {
-            position: relative;
-            z-index: 1;
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--aura-border);
-            border-radius: 16px;
-            padding: 20px;
-            animation: fadeIn 1s ease-out;
-        }
-
-        .thought-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--aura-border);
-        }
-
-        .timer {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--aura-accent);
-        }
-
-        .step {
-            margin-bottom: 15px;
-            padding-left: 25px;
-            position: relative;
-            opacity: 0;
-            transform: translateY(10px);
-            animation: stepIn 0.5s forwards;
-        }
-
-        .step::before {
-            content: '';
-            position: absolute;
-            left: 5px;
-            top: 18px;
-            bottom: -10px;
-            width: 1px;
-            background: var(--aura-border);
-        }
-
-        .step:last-child::before {
-            display: none;
-        }
-
-        .step-dot {
-            position: absolute;
-            left: 0;
-            top: 2px;
-            font-size: 14px;
-        }
-
-        .step-title {
-            font-weight: 700;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-
-        .step-desc {
-            font-size: 13px;
-            color: var(--aura-text-muted);
-            line-height: 1.5;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes stepIn {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .step:nth-child(1) { animation-delay: 0.5s; }
-        .step:nth-child(2) { animation-delay: 1.5s; }
-        .step:nth-child(3) { animation-delay: 2.5s; }
-        .step:nth-child(4) { animation-delay: 3.5s; }
-
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            background: var(--aura-gradient);
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            margin-top: 20px;
-        }
+        body { overflow-y: auto; padding: 40px; background: #0f172a; }
+        .demo-container { max-width: 800px; margin: 0 auto; }
+        .demo-header { text-align: center; margin-bottom: 40px; }
+        .demo-header h1 { font-size: 32px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .demo-card { background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 30px; margin-bottom: 30px; backdrop-filter: blur(10px); }
+        .aura-thought-wrapper { margin-bottom: 20px; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; overflow: hidden; }
+        .aura-thought-header { background: rgba(99, 102, 241, 0.1); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 13px; }
+        .aura-thought-content { padding: 15px; background: rgba(15, 23, 42, 0.5); border-top: 1px solid rgba(255,255,255,0.05); }
+        .aura-thinking-step { margin-bottom: 12px; }
+        .aura-step-header { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #8b5cf6; margin-bottom: 4px; }
+        .aura-step-detail { padding-left: 20px; color: #94a3b8; font-size: 13px; border-left: 2px solid rgba(139, 92, 246, 0.3); margin-left: 4px; }
+        .aura-response-text h1 { color: #38bdf8; font-size: 24px; margin: 20px 0 10px; }
+        .aura-response-text p { line-height: 1.6; color: #e2e8f0; margin-bottom: 15px; }
+        .aura-response-text ul { padding-left: 20px; margin-bottom: 15px; }
+        .aura-response-text li { margin-bottom: 8px; color: #e2e8f0; }
+        .aura-response-text strong { color: #8b5cf6; }
     </style>
 </head>
 <body>
     <div class="demo-container">
-        <div class="header">
-            <div class="logo">💎</div>
-            <h1>AURA Search Engine</h1>
-            <p style="color: var(--aura-text-muted);">Inteligência Orquestrada em Tempo Real</p>
+        <div class="demo-header">
+            <h1>AURA Search & Deep Thinking</h1>
+            <p style="color: #94a3b8;">Demonstração da inteligência v12.0.0</p>
         </div>
 
-        <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <span class="search-text">"Quais são as novidades da Chrome Extension API em 2026?"</span>
-        </div>
-
-        <div class="thought-demo">
-            <div class="thought-header">
-                <span style="font-size: 18px;">🧠</span>
-                <span class="timer">Pensou por 4 segundos</span>
+        <div class="demo-card">
+            <div style="margin-bottom: 20px; color: #8b5cf6; font-weight: 600;">USER: Olá, poderia criar um PDF sobre o dorama "Beleza Verdadeira"?</div>
+            
+            <div class="aura-thought-wrapper">
+                <div class="aura-thought-header" style="background: rgba(124, 77, 255, 0.2); color: #7c4dff;">
+                    <span>✅ Concluído em 4 segundos</span>
+                    <span>▲</span>
+                </div>
+                <div class="aura-thought-content">
+                    <div class="aura-thinking-step">
+                        <div class="aura-step-header"><span>🧠</span> Thinking...</div>
+                        <div class="aura-step-detail">| O usuário enviou: "Olá, poderia criar um PDF sobre o dorama "Beleza Verdadeira"?"; então devo me preparar para agir.</div>
+                    </div>
+                    <div class="aura-thinking-step">
+                        <div class="aura-step-header"><span>🎨</span> Aura Canvas ▲</div>
+                        <div class="aura-step-detail">| Conexão feita com sucesso. Achando o recurso "PDF".</div>
+                    </div>
+                    <div class="aura-thinking-step">
+                        <div class="aura-step-header"><span>🔍</span> Pesquisa ("Beleza Verdadeira") ▲</div>
+                        <div class="aura-step-detail">| Pesquisa concluída. Fontes encontradas: <a href="#" style="color:#38bdf8">Netflix</a>, <a href="#" style="color:#38bdf8">Wiki Dorama</a>.</div>
+                    </div>
+                    <div class="aura-thinking-step">
+                        <div class="aura-step-header"><span>✅</span> Fact-Checking...</div>
+                        <div class="aura-step-detail">| Validando consistência e mantendo a integridade dos dados.</div>
+                    </div>
+                </div>
             </div>
 
-            <div class="step">
-                <span class="step-dot">🔍</span>
-                <div class="step-title">Aura Search...</div>
-                <div class="step-desc">| Informação não encontrada no treinamento local... Realizando busca web profunda sobre "Chrome Extension API 2026".</div>
+            <div class="aura-response-text">
+                <h1>Beleza Verdadeira: Uma Exploração da Essência</h1>
+                <p>Claro! Eu posso criar esse documento para você. <strong>Beleza Verdadeira</strong> (True Beauty) é um dos doramas mais populares da atualidade, e aqui está uma estrutura do que preparei para o seu PDF:</p>
+                <ul>
+                    <li><strong>Sinopse:</strong> A jornada de superação de Lim Ju-kyung.</li>
+                    <li><strong>Temas:</strong> Autoestima, bullying e a descoberta da beleza interior.</li>
+                    <li><strong>Elenco:</strong> Moon Ga-young, Cha Eun-woo e Hwang In-youp.</li>
+                </ul>
+                <p>O arquivo está pronto para ser gerado com o design premium da AURA.</p>
             </div>
 
-            <div class="step">
-                <span class="step-dot">🌐</span>
-                <div class="step-title">Processando Fontes...</div>
-                <div class="step-desc">| 3 fontes oficiais encontradas (developer.chrome.com). Sintetizando atualizações do Manifest V4 e novas Side Panel APIs.</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-top:20px; border:1px solid rgba(255,255,255,0.1);">
+                <div><strong>📄 AURA_Beleza_Verdadeira.pdf</strong></div>
+                <div style="display:flex; gap:10px;">
+                    <button style="padding:8px 15px; background:rgba(255,255,255,0.1); border:none; border-radius:8px; color:white; cursor:pointer;">Abrir</button>
+                    <button style="padding:8px 15px; background:linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border:none; border-radius:8px; color:white; cursor:pointer;">📥 Baixar</button>
+                </div>
             </div>
-
-            <div class="step">
-                <span class="step-dot">💻</span>
-                <div class="step-title">Claude Coder...</div>
-                <div class="step-desc">| Detectada necessidade de exemplo técnico. Estruturando snippet de código para a nova API de Inteligência On-device.</div>
-            </div>
-
-            <div class="step">
-                <span class="step-dot">✅</span>
-                <div class="step-title">Fact-Checking...</div>
-                <div class="step-desc">| Validando consistência técnica com a documentação oficial. 100% de precisão detectada.</div>
-            </div>
-        </div>
-
-        <div style="text-align: center;">
-            <div class="badge">AURA AI v6.1.0</div>
         </div>
     </div>
 </body>

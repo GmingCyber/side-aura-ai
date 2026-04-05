@@ -248,13 +248,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const thoughtWrapper = document.createElement('div');
         thoughtWrapper.className = 'aura-thought-wrapper';
+        // Reduced padding and more compact design for the header
         thoughtWrapper.innerHTML = `
-            <div class="aura-thought-header">
+            <div class="aura-thought-header" style="padding: 8px 12px; font-size: 12px;">
                 <span class="aura-thought-icon">🧠</span>
                 <span class="aura-thought-timer">Pensando...</span>
                 <span class="aura-thought-toggle">▼</span>
             </div>
-            <div class="aura-thought-content aura-hidden"></div>
+            <div class="aura-thought-content aura-hidden" style="padding: 10px 15px;"></div>
         `;
         contentDiv.appendChild(thoughtWrapper);
         const thoughtHeader = thoughtWrapper.querySelector('.aura-thought-header');
@@ -344,9 +345,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 // Use marked.js for Rich Text rendering
                 if (typeof marked !== 'undefined') {
+                    // Configure marked for better security and features
+                    marked.setOptions({
+                        breaks: true,
+                        gfm: true,
+                        headerIds: false,
+                        mangle: false
+                    });
                     responseText.innerHTML = marked.parse(full);
                 } else {
-                    responseText.textContent = full;
+                    // Fallback to basic formatting if marked is not available
+                    responseText.innerHTML = full.replace(/\n/g, '<br>')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/#(.*?)(\n|$)/g, '<h3>$1</h3>');
                 }
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             });
