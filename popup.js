@@ -1,4 +1,4 @@
-// popup.js - AURA AI v9.0.0 (AURA OS & LIVE CANVAS)
+// popup.js - AURA AI v10.0.0 (AURA DESIGN ENGINE)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -35,13 +35,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- HISTORY SYSTEM (FIXED) ---
+    // --- HISTORY SYSTEM ---
     async function saveChatHistory(chatId, messages) {
         const storageObj = {};
         storageObj[`aura_chat_${chatId}`] = messages.slice(-50);
         await chrome.storage.local.set(storageObj);
         
-        // Update chat list
         const historyData = await chrome.storage.local.get(['aura_chats_list']);
         let list = historyData.aura_chats_list || [];
         const chatIdx = list.findIndex(c => c.id === chatId);
@@ -122,7 +121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
-    // --- LIVE PREVIEW SYSTEM ---
+    // --- LIVE PREVIEW SYSTEM (ADVANCED) ---
     function openLivePreview(type, title, content) {
         const existing = document.querySelector('.aura-live-preview');
         if (existing) existing.remove();
@@ -133,35 +132,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="aura-preview-header">
                 <div class="aura-preview-title">📄 ${title} (${type})</div>
                 <div class="aura-preview-actions">
-                    <button id="preview-fullscreen">🔲</button>
-                    <button id="preview-download">📥</button>
-                    <button id="preview-close">✕</button>
+                    <button id="preview-fullscreen" title="Tela Cheia">🔲</button>
+                    <button id="preview-download" title="Baixar">📥</button>
+                    <button id="preview-close" title="Fechar">✕</button>
                 </div>
             </div>
             <div class="aura-preview-toolbar">
-                <button data-cmd="bold"><b>B</b></button>
-                <button data-cmd="italic"><i>I</i></button>
-                <select id="font-size">
+                <button data-cmd="bold" title="Negrito"><b>B</b></button>
+                <button data-cmd="italic" title="Itálico"><i>I</i></button>
+                <button data-cmd="insertUnorderedList" title="Lista">•</button>
+                <button data-cmd="formatBlock" data-val="blockquote" title="Citação">"</button>
+                <select id="font-size" title="Tamanho">
                     <option value="3">Pequeno</option>
                     <option value="4" selected>Médio</option>
                     <option value="6">Grande</option>
                 </select>
-                <input type="color" id="font-color" value="#ffffff">
+                <input type="color" id="font-color" value="#ffffff" title="Cor">
             </div>
-            <div class="aura-preview-editor" contenteditable="true">${content}</div>
+            <div class="aura-preview-editor" contenteditable="true">${formatContentForEditor(content)}</div>
             <div class="aura-preview-resizer"></div>
         `;
         document.body.appendChild(preview);
 
-        // Resizer logic
         const resizer = preview.querySelector('.aura-preview-resizer');
         let isResizing = false;
         resizer.onmousedown = (e) => { isResizing = true; document.onmousemove = handleResize; document.onmouseup = () => isResizing = false; };
         function handleResize(e) { if (isResizing) { const width = window.innerWidth - e.clientX; preview.style.width = `${width}px`; } }
 
-        // Toolbar logic
         preview.querySelectorAll('[data-cmd]').forEach(btn => {
-            btn.onclick = () => document.execCommand(btn.dataset.cmd, false, null);
+            btn.onclick = () => document.execCommand(btn.dataset.cmd, false, btn.dataset.val || null);
         });
         document.getElementById('font-size').onchange = (e) => document.execCommand('fontSize', false, e.target.value);
         document.getElementById('font-color').oninput = (e) => document.execCommand('foreColor', false, e.target.value);
@@ -174,13 +173,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
+    function formatContentForEditor(content) {
+        // Basic markdown-like to HTML conversion for the editor
+        return content
+            .replace(/^# (.*$)/gim, '<h1 style="color:#7c4dff; font-size:24px;">$1</h1>')
+            .replace(/^## (.*$)/gim, '<h2 style="color:#448aff; font-size:20px;">$1</h2>')
+            .replace(/^\* (.*$)/gim, '<ul><li>$1</li></ul>')
+            .replace(/^> (.*$)/gim, '<blockquote style="border-left:4px solid #7c4dff; padding-left:15px; font-style:italic; color:#a0a0a0;">$1</blockquote>')
+            .replace(/\n/g, '<br>');
+    }
+
     function generateDocument(type, title, content) {
         if (type === 'PDF') {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            doc.setFontSize(20); doc.text(title, 20, 20);
-            doc.setFontSize(12); const splitText = doc.splitTextToSize(content, 170);
-            doc.text(splitText, 20, 40); doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
+            doc.setFontSize(22); doc.setTextColor(124, 77, 255); doc.text(title, 20, 25);
+            doc.setDrawColor(124, 77, 255); doc.line(20, 30, 190, 30);
+            doc.setFontSize(12); doc.setTextColor(0, 0, 0);
+            const splitText = doc.splitTextToSize(content, 170);
+            doc.text(splitText, 20, 45); doc.save(`${title.replace(/\s+/g, '_')}.pdf`);
         } else {
             const blob = new Blob([content], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
@@ -189,7 +200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- DYNAMIC THINKING (ADVANCED) ---
+    // --- DYNAMIC THINKING (ADVANCED v10.0.0) ---
     function getDynamicThinking(text) {
         const lowerText = text.toLowerCase();
         const truncatedText = text.length > 60 ? text.substring(0, 57) + "..." : text;
@@ -297,13 +308,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="margin-top: 5px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 11px;">
                         <div style="display:flex; gap:10px; margin-bottom:5px;">
                             <div style="width:40px; height:40px; background:#333; border-radius:4px;"></div>
-                            <div><strong>Fonte 1:</strong> Netflix - Beleza Verdadeira<br><span style="color:var(--aura-accent)">netflix.com/title/...</span></div>
+                            <div><strong>Fonte 1:</strong> Netflix - Beleza Verdadeira<br><a href="https://www.netflix.com/title/81410824" target="_blank" style="color:var(--aura-accent)">netflix.com/title/81410824</a></div>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <div style="width:40px; height:40px; background:#333; border-radius:4px;"></div>
+                            <div><strong>Fonte 2:</strong> Wiki Dorama - Resumo<br><a href="https://mydramalist.com/38627-true-beauty" target="_blank" style="color:var(--aura-accent)">mydramalist.com/38627-true-beauty</a></div>
                         </div>
                     </div>
                 `;
             } else if (dynamic.tool === "Aura Search") {
                 const searchStep = addThinkingStep(`Pesquisa ("${dynamic.searchTerms || 'Contexto'}")`, dynamic.toolDetail, "🔍", true);
-                searchStep.querySelector('.aura-step-extra').innerHTML = `<div style="padding:8px; font-size:11px;">Buscando por: ${dynamic.searchTerms}</div>`;
+                searchStep.querySelector('.aura-step-extra').innerHTML = `<div style="padding:8px; font-size:11px;">Buscando por: <a href="https://www.google.com/search?q=${encodeURIComponent(dynamic.searchTerms)}" target="_blank" style="color:var(--aura-accent)">${dynamic.searchTerms}</a></div>`;
             } else {
                 addThinkingStep(dynamic.tool, dynamic.toolDetail, dynamic.toolIcon);
             }
@@ -331,7 +346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const fileCard = document.createElement('div');
                 fileCard.className = 'aura-file-card';
                 fileCard.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; margin-top:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; margin-top:10px; border:1px solid var(--aura-border);">
                         <div><strong>📄 AURA_Document.${dynamic.canvasType.toLowerCase()}</strong></div>
                         <div style="display:flex; gap:8px;">
                             <button class="aura-open-preview" style="padding:5px 10px; background:rgba(255,255,255,0.1); border:none; border-radius:6px; color:white; cursor:pointer;">Abrir</button>
