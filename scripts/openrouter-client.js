@@ -1,4 +1,4 @@
-// openrouter-client.js
+// openrouter-client.js - AURA AI v12.0.9 (ROBUST MULTI-PROVIDER)
 class AuraAIClient {
     constructor() {
         this.providers = [
@@ -6,7 +6,7 @@ class AuraAIClient {
                 id: 'aura-free', 
                 name: 'Aura Free (Sem Key)', 
                 url: 'https://openrouter.ai/api/v1', 
-                key: 'sk-or-v1-7687878787878787878787878787878787878787878787878787878787878787', // Placeholder for free access if needed or just use openrouter free models
+                key: 'sk-or-v1-7687878787878787878787878787878787878787878787878787878787878787', 
                 isFree: true,
                 models: [
                     'google/gemini-2.0-flash-exp:free', 
@@ -78,7 +78,7 @@ class AuraAIClient {
                 models: [] 
             }
         ];
-        this.currentProviderId = 'openrouter';
+        this.currentProviderId = 'aura-free';
         this.currentModel = 'google/gemini-2.0-flash-exp:free';
     }
 
@@ -96,7 +96,6 @@ class AuraAIClient {
             });
         }
         
-        // CRITICAL FIX: Ensure currentProviderId is updated from storage
         if (result.aura_current_provider) {
             this.currentProviderId = result.aura_current_provider;
         }
@@ -141,15 +140,10 @@ class AuraAIClient {
         const provider = this.getProvider();
         const model = this.currentModel;
 
-        // Aura Free uses a public key or specific logic
         let apiKey = provider.key;
         
         if (provider.id === 'aura-free') {
-            // If it's Aura Free, we can use a default key for free models if the user hasn't provided one
-            // Note: OpenRouter requires a key even for free models, but we can provide a "public" one 
-            // or guide the user. For now, let's use the one set in constructor or user's key.
             if (!apiKey || apiKey.includes('787878')) {
-                // We'll try to use the key from 'openrouter' provider if available
                 const orProvider = this.providers.find(p => p.id === 'openrouter');
                 if (orProvider && orProvider.key) {
                     apiKey = orProvider.key;
@@ -166,15 +160,14 @@ class AuraAIClient {
             'Content-Type': 'application/json'
         };
 
-        if (provider.id === 'openrouter') {
+        if (provider.id === 'openrouter' || provider.id === 'aura-free') {
             headers['HTTP-Referer'] = 'https://aura-ai-extension.com';
             headers['X-Title'] = 'AURA AI Extension';
         }
 
         try {
-            // Anthropic requires a different header and body structure if not using their OpenAI-compatible endpoint
             if (provider.id === 'anthropic' && !provider.url.includes('openai')) {
-                headers['x-api-key'] = provider.key;
+                headers['x-api-key'] = apiKey;
                 headers['anthropic-version'] = '2023-06-01';
                 delete headers['Authorization'];
             }
@@ -191,8 +184,12 @@ class AuraAIClient {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error?.message || `Erro no provedor ${provider.name}`);
+                let errorMsg = `Erro ${response.status}: ${response.statusText}`;
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.error?.message || errorMsg;
+                } catch (e) {}
+                throw new Error(errorMsg);
             }
 
             if (onStream) {

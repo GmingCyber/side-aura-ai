@@ -1,4 +1,4 @@
-// popup.js - AURA AI v12.0.4 (AURA VISUAL REFINED - GEMINI STYLE)
+// popup.js - AURA AI v12.0.9 (REACTIVE NAVIGATION & ROBUST API)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -33,6 +33,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) {
             console.error('Three.js Error:', e);
         }
+    }
+
+    // --- TOAST NOTIFICATION SYSTEM ---
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `aura-toast aura-toast-${type}`;
+        toast.innerHTML = `
+            <div class="aura-toast-content">
+                <span class="aura-toast-icon">${type === 'error' ? '❌' : '✅'}</span>
+                <span class="aura-toast-message">${message}</span>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }, 100);
     }
 
     // --- OVERLAY MANAGEMENT ---
@@ -99,6 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const list = historyData.aura_chats_list || [];
             list.unshift({ id: newId, title: 'Nova Conversa', date: new Date().toLocaleString() });
             await chrome.storage.local.set({ 'aura_chats_list': list });
+            showToast('Nova conversa iniciada');
         };
     }
 
@@ -280,6 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Chat Error:', error);
             completeThinking(thinkingId, 0);
             const errorMsg = error.message || 'Erro desconhecido';
+            showToast(`Erro: ${errorMsg}`, 'error');
             appendMessage('AURA', `❌ **Erro de Conexão:** ${errorMsg}\n\nVerifique se a sua API Key, o Provedor e o Modelo estão corretos nas configurações.`, false);
         }
     }
@@ -423,15 +445,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         userInput.style.height = userInput.scrollHeight + 'px';
     };
 
-    // --- NAVIGATION ---
+    // --- NAVIGATION (STATE MANAGER) ---
+    function switchView(viewId) {
+        closeAllOverlays();
+        setActiveNav(viewId);
+        
+        if (viewId === 'nav-chat') {
+            // Chat is the default view, just close overlays
+        } else if (viewId === 'nav-notes') {
+            showNotes();
+        } else if (viewId === 'nav-training') {
+            showTraining();
+        } else if (viewId === 'nav-settings') {
+            showSettings();
+        }
+    }
+
     document.querySelectorAll('.aura-nav-item').forEach(item => {
-        item.onclick = () => {
-            const id = item.id;
-            setActiveNav(id);
-            if (id === 'nav-chat') closeAllOverlays();
-            else if (id === 'nav-notes') showNotes();
-            else if (id === 'nav-training') showTraining();
-            else if (id === 'nav-settings') showSettings();
+        item.onclick = (e) => {
+            e.preventDefault();
+            switchView(item.id);
         };
     });
 
@@ -602,13 +635,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             await aiClient.setModel(model);
             await aiClient.setProvider(providerId);
             
+            showToast('Configurações salvas com sucesso');
             div.remove();
-            setActiveNav('nav-chat');
+            switchView('nav-chat');
         };
 
         document.getElementById('settings-close').onclick = () => {
             div.remove();
-            setActiveNav('nav-chat');
+            switchView('nav-chat');
         };
     }
 
@@ -632,12 +666,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             else if (tab === 'files') { formArea.innerHTML = `<input type="file" id="add-file" style="width:100%; margin-bottom:5px;"><button id="add-btn" style="width:100%; padding:8px; background:var(--aura-gradient); border:none; border-radius:6px; color:white; cursor:pointer;">Adicionar Arquivo</button>`; }
             else { formArea.innerHTML = `<input type="text" id="add-title" placeholder="Nome desta fonte" style="width:100%; margin-bottom:5px;"><textarea id="add-content" placeholder="Cole o conteúdo ou descreva a fonte..." style="width:100%; height:60px;"></textarea><button id="add-btn" style="width:100%; padding:8px; background:var(--aura-gradient); border:none; border-radius:6px; color:white; cursor:pointer;">Adicionar Fonte</button>`; }
             document.getElementById('add-btn').onclick = async () => {
-                if (tab === 'files') { const fileInput = document.getElementById('add-file'); const file = fileInput.files[0]; if (file) { const reader = new FileReader(); reader.onload = async (e) => { const content = e.target.result; await trainingManager.addItem(tab, { title: file.name, name: file.name, content: content }); updateTab(tab); }; reader.readAsText(file); } }
-                else { const title = document.getElementById('add-title')?.value; const content = document.getElementById('add-content')?.value; if (title && content) { await trainingManager.addItem(tab, { title, name: title, content }); updateTab(tab); } }
+                if (tab === 'files') { const fileInput = document.getElementById('add-file'); const file = fileInput.files[0]; if (file) { const reader = new FileReader(); reader.onload = async (e) => { const content = e.target.result; await trainingManager.addItem(tab, { title: file.name, name: file.name, content: content }); updateTab(tab); showToast('Arquivo adicionado'); }; reader.readAsText(file); } }
+                else { const title = document.getElementById('add-title')?.value; const content = document.getElementById('add-content')?.value; if (title && content) { await trainingManager.addItem(tab, { title, name: title, content }); updateTab(tab); showToast('Item adicionado'); } }
             };
         };
         document.querySelectorAll('.aura-tab-btn').forEach(btn => { btn.onclick = () => { document.querySelectorAll('.aura-tab-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); updateTab(btn.dataset.tab); }; });
-        updateTab('text'); document.getElementById('training-close').onclick = () => { div.remove(); setActiveNav('nav-chat'); };
+        updateTab('text'); document.getElementById('training-close').onclick = () => { div.remove(); switchView('nav-chat'); };
     }
 
     async function showNotes() {
@@ -651,7 +685,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
         const div = createOverlay(notesHtml);
-        document.getElementById('add-note-btn').onclick = async () => { const title = prompt("Título da nota:"); const content = prompt("Conteúdo:"); if (title && content) { await notesManager.saveNote(title, content); div.remove(); showNotes(); } };
-        document.getElementById('notes-close').onclick = () => { div.remove(); setActiveNav('nav-chat'); };
+        document.getElementById('add-note-btn').onclick = async () => { const title = prompt("Título da nota:"); const content = prompt("Conteúdo:"); if (title && content) { await notesManager.saveNote(title, content); div.remove(); showNotes(); showToast('Nota salva'); } };
+        document.getElementById('notes-close').onclick = () => { div.remove(); switchView('nav-chat'); };
     }
 });
