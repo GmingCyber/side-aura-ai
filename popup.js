@@ -1,4 +1,4 @@
-// popup.js - AURA AI v10.0.0 (AURA DESIGN ENGINE)
+// popup.js - AURA AI v12.0.1 (AURA REFINED)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -174,7 +174,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function formatContentForEditor(content) {
-        // Basic markdown-like to HTML conversion for the editor
         return content
             .replace(/^# (.*$)/gim, '<h1 style="color:#7c4dff; font-size:24px;">$1</h1>')
             .replace(/^## (.*$)/gim, '<h2 style="color:#448aff; font-size:20px;">$1</h2>')
@@ -200,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- DYNAMIC THINKING (ADVANCED v10.0.0) ---
+    // --- DYNAMIC THINKING (ADVANCED v12.0.1) ---
     function getDynamicThinking(text) {
         const lowerText = text.toLowerCase();
         const truncatedText = text.length > 60 ? text.substring(0, 57) + "..." : text;
@@ -213,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             canvasType = lowerText.includes('pdf') ? 'PDF' : 'TXT';
             toolDetail = `Conectando a ferramenta Aura Canvas > Conexão feita com sucesso. Achando o recurso "${canvasType}".`;
         } else if (lowerText.includes('pesquise') || lowerText.includes('quem é') || lowerText.includes('notícias') || lowerText.includes('preço') || lowerText.includes('hoje') || lowerText.includes('dorama')) {
-            tool = "Aura Search"; toolIcon = "🔍"; 
+            tool = "Aura Search"; toolIcon = "🔍";
             searchTerms = text.replace(/pesquise|quem é|notícias|preço|hoje|dorama/gi, '').trim();
             toolDetail = `Informação não encontrada no treinamento... Realizando busca web profunda sobre "${searchTerms || truncatedText}".`;
         }
@@ -248,7 +247,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const thoughtWrapper = document.createElement('div');
         thoughtWrapper.className = 'aura-thought-wrapper';
-        // Reduced padding and more compact design for the header
         thoughtWrapper.innerHTML = `
             <div class="aura-thought-header" style="padding: 8px 12px; font-size: 12px;">
                 <span class="aura-thought-icon">🧠</span>
@@ -272,13 +270,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             step.innerHTML = `
                 <div class="aura-step-header" style="${expandable ? 'cursor:pointer;' : ''}">
                     <span class="aura-step-dot">${icon}</span>
-                    <span class="aura-step-label">${label}${expandable ? ' >' : '...'}</span>
+                    <span class="aura-step-label">${label}${expandable ? ' ▲' : '...'}</span>
                 </div>
                 <div class="aura-step-detail">| ${detail}</div>
                 <div class="aura-step-extra aura-hidden"></div>
             `;
             if (expandable) {
-                step.querySelector('.aura-step-header').onclick = () => step.querySelector('.aura-step-extra').classList.toggle('aura-hidden');
+                step.querySelector('.aura-step-header').onclick = () => {
+                    const extra = step.querySelector('.aura-step-extra');
+                    const labelEl = step.querySelector('.aura-step-label');
+                    extra.classList.toggle('aura-hidden');
+                    labelEl.textContent = labelEl.textContent.includes('▲') ? labelEl.textContent.replace('▲', '▼') : labelEl.textContent.replace('▼', '▲');
+                };
             }
             thoughtContent.appendChild(step);
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -343,21 +346,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     responseText.className = 'aura-response-text'; 
                     contentDiv.appendChild(responseText); 
                 }
-                // Use marked.js for Rich Text rendering
+                
                 if (typeof marked !== 'undefined') {
-                    // Configure marked for better security and features
-                    marked.setOptions({
-                        breaks: true,
-                        gfm: true,
-                        headerIds: false,
-                        mangle: false
-                    });
+                    marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
                     responseText.innerHTML = marked.parse(full);
                 } else {
-                    // Fallback to basic formatting if marked is not available
-                    responseText.innerHTML = full.replace(/\n/g, '<br>')
-                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                        .replace(/#(.*?)(\n|$)/g, '<h3>$1</h3>');
+                    responseText.innerHTML = full.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/#(.*?)(\n|$)/g, '<h3>$1</h3>');
                 }
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             });
@@ -408,22 +402,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (sendBtn) sendBtn.onclick = (e) => { e.preventDefault(); handleSendMessage(); };
     userInput.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
 
-    const navItems = {
-        'nav-settings': showSettings, 'nav-notes': showNotes, 'nav-training': showTraining,
-        'nav-chat': () => { document.querySelectorAll('.aura-nav-item').forEach(i => i.classList.remove('active')); document.getElementById('nav-chat').classList.add('active'); }
-    };
-    Object.entries(navItems).forEach(([id, func]) => { const el = document.getElementById(id); if (el) el.onclick = (e) => { e.preventDefault(); func(); }; });
+    // --- NAVIGATION SYSTEM (FIXED v12.0.1) ---
+    const navChat = document.getElementById('nav-chat');
+    const navNotes = document.getElementById('nav-notes');
+    const navTraining = document.getElementById('nav-training');
+    const navSettings = document.getElementById('nav-settings');
+
+    function setActiveNav(activeId) {
+        document.querySelectorAll('.aura-nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.getElementById(activeId).classList.add('active');
+    }
+
+    if (navChat) navChat.onclick = (e) => { e.preventDefault(); setActiveNav('nav-chat'); };
+    if (navNotes) navNotes.onclick = (e) => { e.preventDefault(); setActiveNav('nav-notes'); showNotes(); };
+    if (navTraining) navTraining.onclick = (e) => { e.preventDefault(); setActiveNav('nav-training'); showTraining(); };
+    if (navSettings) navSettings.onclick = (e) => { e.preventDefault(); setActiveNav('nav-settings'); showSettings(); };
 
     async function showSettings() {
         await aiClient.loadConfig(); await modelManager.loadModels();
-        const provider = aiClient.getProvider(); const model = aiClient.currentModel;
+        const provider = aiClient.getProvider();
         const settingsHtml = `
             <div class="aura-settings-overlay">
                 <div class="aura-settings-panel">
                     <h3>Configurações AURA</h3>
-                    <div class="aura-setting-item"><label>Persona Ativa:</label><select id="settings-persona-select">${modelManager.models.map(m => `<option value="${m.id}" ${m.id === modelManager.activeModelId ? 'selected' : ''}>${m.icon} ${m.title}</option>`).join('')}<option value="new-persona">+ Criar Nova Persona</option></select></div>
-                    <div class="aura-divider"></div>
-                    <div class="aura-setting-item"><label>Provedor:</label><select id="settings-provider-select">${aiClient.providers.map(p => `<option value="${p.id}" ${p.id === aiClient.currentProviderId ? 'selected' : ''}>${p.name}</option>`).join('')}</select></div>
                     <div class="aura-setting-item"><label>API Key:</label><input type="password" id="settings-provider-key" value="${provider.key || ''}"></div>
                     <div class="aura-settings-actions"><button id="settings-save">Salvar</button><button id="settings-close">Fechar</button></div>
                 </div>
