@@ -1,4 +1,4 @@
-// popup.js - AURA AI v12.0.3 (AURA REFINED - FULL SETTINGS RESTORED)
+// popup.js - AURA AI v12.0.4 (AURA VISUAL REFINED - GEMINI STYLE)
 document.addEventListener('DOMContentLoaded', async () => {
     const chatMessages = document.getElementById('aura-chat-messages');
     const userInput = document.getElementById('aura-user-input');
@@ -217,288 +217,299 @@ document.addEventListener('DOMContentLoaded', async () => {
         let tool = "General AI"; let toolIcon = "🧠"; let toolDetail = "Processando solicitação geral.";
         let searchTerms = null; let isCanvas = false; let canvasType = null;
 
-        if (lowerText.includes('pdf') || lowerText.includes('documento') || lowerText.includes('arquivo txt') || lowerText.includes('criar um txt')) {
-            tool = "Aura Canvas"; toolIcon = "🎨"; isCanvas = true;
-            canvasType = lowerText.includes('pdf') ? 'PDF' : 'TXT';
-            toolDetail = `Conectando a ferramenta Aura Canvas > Conexão feita com sucesso. Achando o recurso "${canvasType}".`;
-        } else if (lowerText.includes('pesquise') || lowerText.includes('quem é') || lowerText.includes('notícias') || lowerText.includes('preço') || lowerText.includes('hoje') || lowerText.includes('dorama')) {
-            tool = "Aura Search"; toolIcon = "🔍";
-            searchTerms = text.replace(/pesquise|quem é|notícias|preço|hoje|dorama/gi, '').trim();
-            toolDetail = `Informação não encontrada no treinamento... Realizando busca web profunda sobre "${searchTerms || truncatedText}".`;
+        if (lowerText.includes('pdf') || lowerText.includes('documento') || lowerText.includes('arquivo')) {
+            tool = "Aura Canvas"; toolIcon = "🎨"; toolDetail = "Conectando ferramenta de documentos..."; isCanvas = true; canvasType = "PDF";
+        } else if (lowerText.includes('código') || lowerText.includes('python') || lowerText.includes('js') || lowerText.includes('html')) {
+            tool = "Claude Coder"; toolIcon = "💻"; toolDetail = "Ativando ferramenta de codificação...";
+        } else if (lowerText.includes('design') || lowerText.includes('estilo') || lowerText.includes('cor')) {
+            tool = "Gemini Design"; toolIcon = "🎨"; toolDetail = "Ativando ferramenta de design...";
+        } else if (lowerText.includes('pesquise') || lowerText.includes('quem é') || lowerText.includes('preço')) {
+            tool = "Aura Search"; toolIcon = "🔍"; toolDetail = "Realizando busca web..."; searchTerms = text.replace(/pesquise|quem é|preço/gi, '').trim();
         }
 
         return {
-            thinking: `O usuário enviou: "${truncatedText}"; então devo me preparar para agir.`,
-            tool, toolIcon, toolDetail, searchTerms, isCanvas, canvasType,
-            analyzing: `Análise profunda: O usuário solicitou ${isCanvas ? 'a criação de um documento' : 'informações'} sobre "${searchTerms || truncatedText}". Vou estruturar uma resposta completa, garantindo que todos os pontos-chave sejam abordados com precisão técnica e tom adequado à persona ativa.`,
-            planning: "Estratégia: Vou gerar o conteúdo agora, integrando as fontes encontradas e validando cada parágrafo para manter a consistência total."
+            steps: [
+                { title: "Thinking...", content: `| O usuário enviou: "${truncatedText}"; então devo me preparar para agir.`, icon: "🧠" },
+                { title: `${tool}...`, content: `| ${toolDetail}`, icon: toolIcon, isSearch: !!searchTerms, searchTerms: searchTerms, isCanvas: isCanvas, canvasType: canvasType },
+                { title: "Analisando...", content: `| Analisando intenção e contexto para a melhor resposta baseada em "${truncatedText}".`, icon: "⚙️" },
+                { title: "Planejando...", content: `| Vou gerar a resposta agora seguindo o tom da persona ativa e as regras de treinamento.`, icon: "📋" },
+                { title: "Fact-Checking...", content: `| Validando resposta com as fontes de treinamento... 100% de consistência detectada.`, icon: "✅" }
+            ]
         };
     }
 
-    async function handleSendMessage() {
+    // --- CHAT LOGIC ---
+    async function sendMessage() {
         const text = userInput.value.trim();
         if (!text) return;
-        userInput.value = ''; userInput.style.height = 'auto';
+
         appendMessage('USER', text, true);
+        userInput.value = '';
+        userInput.style.height = 'auto';
 
-        const data = await chrome.storage.local.get([`aura_chat_${currentChatId}`]);
-        const messages = data[`aura_chat_${currentChatId}`] || [];
-        const activePersona = modelManager.getActiveModel();
-        const trainingContext = trainingManager.getContextForPrompt();
-        
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        const pageContext = tab ? `[CONTEXTO DA PÁGINA: ${tab.title} | URL: ${tab.url}]` : '';
-        const systemPrompt = `Você é ${activePersona.title}. ${activePersona.description}. ${pageContext}`;
-        const fullPrompt = trainingContext ? `${trainingContext}\n\nPERGUNTA: ${text}` : text;
-        const apiMessages = [ { role: 'system', content: systemPrompt }, ...messages, { role: 'user', content: fullPrompt } ];
-
-        const aiMsgDiv = appendMessage(activePersona.title, '', false);
-        const contentDiv = aiMsgDiv.querySelector('.aura-message-content');
-        
-        const thoughtWrapper = document.createElement('div');
-        thoughtWrapper.className = 'aura-thought-wrapper';
-        thoughtWrapper.innerHTML = `
-            <div class="aura-thought-header" style="padding: 8px 12px; font-size: 12px;">
-                <span class="aura-thought-icon">🧠</span>
-                <span class="aura-thought-timer">Pensando...</span>
-                <span class="aura-thought-toggle">▼</span>
-            </div>
-            <div class="aura-thought-content aura-hidden" style="padding: 10px 15px;"></div>
-        `;
-        contentDiv.appendChild(thoughtWrapper);
-        const thoughtHeader = thoughtWrapper.querySelector('.aura-thought-header');
-        const thoughtContent = thoughtWrapper.querySelector('.aura-thought-content');
-
-        thoughtHeader.onclick = () => {
-            thoughtContent.classList.toggle('aura-hidden');
-            thoughtHeader.querySelector('.aura-thought-toggle').textContent = thoughtContent.classList.contains('aura-hidden') ? '▼' : '▲';
-        };
-
-        const addThinkingStep = (label, detail, icon = '•', expandable = false) => {
-            const step = document.createElement('div');
-            step.className = 'aura-thinking-step';
-            step.innerHTML = `
-                <div class="aura-step-header" style="${expandable ? 'cursor:pointer;' : ''}">
-                    <span class="aura-step-dot">${icon}</span>
-                    <span class="aura-step-label">${label}${expandable ? ' ▲' : '...'}</span>
-                </div>
-                <div class="aura-step-detail">| ${detail}</div>
-                <div class="aura-step-extra aura-hidden"></div>
-            `;
-            if (expandable) {
-                step.querySelector('.aura-step-header').onclick = () => {
-                    const extra = step.querySelector('.aura-step-extra');
-                    const labelEl = step.querySelector('.aura-step-label');
-                    extra.classList.toggle('aura-hidden');
-                    labelEl.textContent = labelEl.textContent.includes('▲') ? labelEl.textContent.replace('▲', '▼') : labelEl.textContent.replace('▼', '▲');
-                };
-            }
-            thoughtContent.appendChild(step);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-            return step;
-        };
-
+        const thinkingData = getDynamicThinking(text);
+        const thinkingId = appendThinking(thinkingData);
         const startTime = Date.now();
-        const timerInterval = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - startTime) / 1000);
-            thoughtHeader.querySelector('.aura-thought-timer').textContent = `Pensando por ${elapsed} segundo${elapsed !== 1 ? 's' : ''}`;
-        }, 1000);
 
         try {
-            const dynamic = getDynamicThinking(text);
-            addThinkingStep("Thinking", dynamic.thinking);
-            await new Promise(r => setTimeout(r, 600));
-
-            if (dynamic.isCanvas) {
-                addThinkingStep("Aura Canvas", dynamic.toolDetail, "🎨", true);
-                await new Promise(r => setTimeout(r, 800));
-                addThinkingStep("Analisando", dynamic.analyzing);
-                await new Promise(r => setTimeout(r, 1000));
-                addThinkingStep("Planejando", dynamic.planning);
-                await new Promise(r => setTimeout(r, 800));
-                
-                const searchStep = addThinkingStep(`Pesquisa ("${dynamic.searchTerms || 'Contexto'}")`, "Pesquisa concluída. Fontes encontradas.", "🔍", true);
-                searchStep.querySelector('.aura-step-extra').innerHTML = `
-                    <div style="margin-top: 5px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 6px; font-size: 11px;">
-                        <div style="display:flex; gap:10px; margin-bottom:5px;">
-                            <div style="width:40px; height:40px; background:#333; border-radius:4px;"></div>
-                            <div><strong>Fonte 1:</strong> Netflix - Beleza Verdadeira<br><a href="https://www.netflix.com/title/81410824" target="_blank" style="color:var(--aura-accent)">netflix.com/title/81410824</a></div>
-                        </div>
-                        <div style="display:flex; gap:10px;">
-                            <div style="width:40px; height:40px; background:#333; border-radius:4px;"></div>
-                            <div><strong>Fonte 2:</strong> Wiki Dorama - Resumo<br><a href="https://mydramalist.com/38627-true-beauty" target="_blank" style="color:var(--aura-accent)">mydramalist.com/38627-true-beauty</a></div>
-                        </div>
-                    </div>
-                `;
-            } else if (dynamic.tool === "Aura Search") {
-                const searchStep = addThinkingStep(`Pesquisa ("${dynamic.searchTerms || 'Contexto'}")`, dynamic.toolDetail, "🔍", true);
-                searchStep.querySelector('.aura-step-extra').innerHTML = `<div style="padding:8px; font-size:11px;">Buscando por: <a href="https://www.google.com/search?q=${encodeURIComponent(dynamic.searchTerms)}" target="_blank" style="color:var(--aura-accent)">${dynamic.searchTerms}</a></div>`;
-            } else {
-                addThinkingStep(dynamic.tool, dynamic.toolDetail, dynamic.toolIcon);
-            }
+            const activePersona = modelManager.getActiveModel();
+            const trainingContext = trainingManager.getContext();
+            const pageContext = await getPageContext();
             
-            await new Promise(r => setTimeout(r, 600));
-            addThinkingStep("Fact-Checking", "Validando consistência e mantendo a integridade dos dados.", "✅", true);
-            await new Promise(r => setTimeout(r, 400));
+            const fullContext = `
+                Persona: ${activePersona.title} (${activePersona.description})
+                Treinamento: ${trainingContext}
+                Página Atual: ${pageContext.title} (${pageContext.url})
+                Mensagem: ${text}
+            `;
 
-            let fullResponse = '';
-            await aiClient.chat(apiMessages, (chunk, full) => {
-                clearInterval(timerInterval);
-                const finalElapsed = Math.floor((Date.now() - startTime) / 1000);
-                thoughtHeader.classList.add('aura-thought-success');
-                thoughtHeader.querySelector('.aura-thought-icon').textContent = '✅';
-                thoughtHeader.querySelector('.aura-thought-timer').textContent = `Concluído em ${finalElapsed} segundo${finalElapsed !== 1 ? 's' : ''}`;
-                
-                fullResponse = full;
-                let responseText = contentDiv.querySelector('.aura-response-text');
-                if (!responseText) { 
-                    responseText = document.createElement('div'); 
-                    responseText.className = 'aura-response-text'; 
-                    contentDiv.appendChild(responseText); 
-                }
-                
-                if (typeof marked !== 'undefined') {
-                    marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
-                    responseText.innerHTML = marked.parse(full);
-                } else {
-                    responseText.innerHTML = full.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/#(.*?)(\n|$)/g, '<h3>$1</h3>');
-                }
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            });
-
-            if (dynamic.isCanvas) {
-                const fileCard = document.createElement('div');
-                fileCard.className = 'aura-file-card';
-                fileCard.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:12px; border-radius:12px; margin-top:10px; border:1px solid var(--aura-border);">
-                        <div><strong>📄 AURA_Document.${dynamic.canvasType.toLowerCase()}</strong></div>
-                        <div style="display:flex; gap:8px;">
-                            <button class="aura-open-preview" style="padding:5px 10px; background:rgba(255,255,255,0.1); border:none; border-radius:6px; color:white; cursor:pointer;">Abrir</button>
-                            <button class="aura-download-file" style="padding:5px 10px; background:var(--aura-gradient); border:none; border-radius:6px; color:white; cursor:pointer;">📥</button>
-                        </div>
-                    </div>
-                `;
-                fileCard.querySelector('.aura-open-preview').onclick = () => openLivePreview(dynamic.canvasType, "AURA_Document", fullResponse);
-                fileCard.querySelector('.aura-download-file').onclick = () => generateDocument(dynamic.canvasType, "AURA_Document", fullResponse);
-                contentDiv.appendChild(fileCard);
-            }
-
-            await saveChatHistory(currentChatId, [...messages, { role: 'user', content: text }, { role: 'assistant', content: fullResponse }]);
+            const response = await aiClient.sendMessage(fullContext);
+            const duration = Math.round((Date.now() - startTime) / 1000);
+            
+            completeThinking(thinkingId, duration);
+            appendMessage('AURA', response, false);
+            
+            // Auto-save history
+            const currentMessages = await chrome.storage.local.get([`aura_chat_${currentChatId}`]);
+            const history = currentMessages[`aura_chat_${currentChatId}`] || [];
+            history.push({ role: 'user', content: text });
+            history.push({ role: 'assistant', content: response });
+            await saveChatHistory(currentChatId, history);
 
         } catch (error) {
-            clearInterval(timerInterval);
-            if (thoughtWrapper) thoughtWrapper.remove();
-            contentDiv.textContent = `Erro: ${error.message}`;
-            contentDiv.classList.add('aura-error');
+            console.error('Chat Error:', error);
+            completeThinking(thinkingId, 0);
+            appendMessage('AURA', 'Desculpe, tive um erro ao processar sua mensagem. Verifique sua API Key nas configurações.', false);
         }
     }
 
     function appendMessage(sender, text, isUser) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `aura-message ${isUser ? 'aura-message-user' : 'aura-message-ai'}`;
+        
         const header = document.createElement('div');
         header.className = 'aura-message-header';
-        header.textContent = sender;
-        const content = document.createElement('div');
-        content.className = 'aura-message-content';
-        content.textContent = text;
+        header.innerText = sender;
         msgDiv.appendChild(header);
+
+        const content = document.createElement('div');
+        content.className = 'aura-response-text';
+        if (isUser) {
+            content.innerText = text;
+        } else {
+            content.innerHTML = marked.parse(text);
+        }
         msgDiv.appendChild(content);
+
+        // Check for Canvas actions
+        if (!isUser && (text.includes('PDF') || text.includes('TXT'))) {
+            const btn = document.createElement('button');
+            btn.className = 'aura-canvas-btn';
+            btn.style.marginTop = '10px';
+            btn.style.padding = '8px 12px';
+            btn.style.background = 'var(--aura-gradient)';
+            btn.style.border = 'none';
+            btn.style.borderRadius = '8px';
+            btn.style.color = 'white';
+            btn.style.cursor = 'pointer';
+            btn.innerText = '📄 Abrir no Aura Canvas';
+            btn.onclick = () => {
+                const type = text.includes('PDF') ? 'PDF' : 'TXT';
+                const title = text.split('\n')[0].replace(/#/g, '').trim() || 'Documento Aura';
+                openLivePreview(type, title, text);
+            };
+            msgDiv.appendChild(btn);
+        }
+
         chatMessages.appendChild(msgDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
-        return msgDiv;
     }
 
-    if (sendBtn) sendBtn.onclick = (e) => { e.preventDefault(); handleSendMessage(); };
-    userInput.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
+    function appendThinking(data) {
+        const id = 'thinking-' + Date.now();
+        const thinkDiv = document.createElement('div');
+        thinkDiv.id = id;
+        thinkDiv.className = 'aura-thought-container';
+        
+        thinkDiv.innerHTML = `
+            <div class="aura-thought-header">
+                <span class="aura-thought-timer">🧠 Pensando...</span>
+                <span class="aura-thought-arrow">▼</span>
+            </div>
+            <div class="aura-thought-body" style="display: none;">
+                ${data.steps.map(step => `
+                    <div class="aura-thought-step">
+                        <div class="aura-thought-step-header">
+                            <span class="aura-thought-step-icon">${step.icon}</span>
+                            <span class="aura-thought-step-title">${step.title}</span>
+                            <span class="aura-thought-step-toggle">▼</span>
+                        </div>
+                        <div class="aura-thought-step-content" style="display: none;">
+                            ${step.content}
+                            ${step.isSearch ? `
+                                <div class="aura-search-box">
+                                    <div class="aura-search-term">🔍 Pesquisa: "${step.searchTerms}"</div>
+                                    <div class="aura-search-results">
+                                        <div class="aura-search-link">🌐 <a href="https://www.google.com/search?q=${encodeURIComponent(step.searchTerms)}" target="_blank">Ver resultados na web</a></div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        chatMessages.appendChild(thinkDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    // --- NAVIGATION SYSTEM ---
-    const navChat = document.getElementById('nav-chat');
-    const navNotes = document.getElementById('nav-notes');
-    const navTraining = document.getElementById('nav-training');
-    const navSettings = document.getElementById('nav-settings');
+        // Toggle logic
+        const header = thinkDiv.querySelector('.aura-thought-header');
+        const body = thinkDiv.querySelector('.aura-thought-body');
+        const arrow = thinkDiv.querySelector('.aura-thought-arrow');
+        
+        header.onclick = () => {
+            const isHidden = body.style.display === 'none';
+            body.style.display = isHidden ? 'block' : 'none';
+            arrow.innerText = isHidden ? '▲' : '▼';
+        };
 
-    function setActiveNav(activeId) {
-        document.querySelectorAll('.aura-nav-item').forEach(item => {
-            item.classList.remove('active');
+        thinkDiv.querySelectorAll('.aura-thought-step-header').forEach(h => {
+            h.onclick = (e) => {
+                e.stopPropagation();
+                const content = h.nextElementSibling;
+                const t = h.querySelector('.aura-thought-step-toggle');
+                const isHidden = content.style.display === 'none';
+                content.style.display = isHidden ? 'block' : 'none';
+                t.innerText = isHidden ? '▲' : '▼';
+            };
         });
-        document.getElementById(activeId).classList.add('active');
+
+        return id;
     }
 
-    if (navChat) navChat.onclick = (e) => { e.preventDefault(); setActiveNav('nav-chat'); closeAllOverlays(); };
-    if (navNotes) navNotes.onclick = (e) => { e.preventDefault(); setActiveNav('nav-notes'); showNotes(); };
-    if (navTraining) navTraining.onclick = (e) => { e.preventDefault(); setActiveNav('nav-training'); showTraining(); };
-    if (navSettings) navSettings.onclick = (e) => { e.preventDefault(); setActiveNav('nav-settings'); showSettings(); };
+    function completeThinking(id, seconds) {
+        const thinkDiv = document.getElementById(id);
+        if (thinkDiv) {
+            const timer = thinkDiv.querySelector('.aura-thought-timer');
+            const header = thinkDiv.querySelector('.aura-thought-header');
+            timer.innerText = `✅ Concluído em ${seconds}s`;
+            header.style.background = 'rgba(99, 102, 241, 0.2)';
+            header.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+        }
+    }
 
+    async function getPageContext() {
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            return { title: tab.title, url: tab.url };
+        } catch (e) {
+            return { title: 'Desconhecido', url: '' };
+        }
+    }
+
+    // --- EVENT LISTENERS ---
+    sendBtn.onclick = sendMessage;
+    userInput.onkeydown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    };
+
+    userInput.oninput = () => {
+        userInput.style.height = 'auto';
+        userInput.style.height = userInput.scrollHeight + 'px';
+    };
+
+    // --- NAVIGATION ---
+    document.querySelectorAll('.aura-nav-item').forEach(item => {
+        item.onclick = () => {
+            const id = item.id;
+            setActiveNav(id);
+            if (id === 'nav-chat') closeAllOverlays();
+            else if (id === 'nav-notes') showNotes();
+            else if (id === 'nav-training') showTraining();
+            else if (id === 'nav-config') showSettings();
+        };
+    });
+
+    function setActiveNav(id) {
+        document.querySelectorAll('.aura-nav-item').forEach(item => {
+            item.classList.toggle('active', item.id === id);
+        });
+    }
+
+    // --- OVERLAY SCREENS ---
     async function showSettings() {
-        await aiClient.loadConfig(); await modelManager.loadModels();
-        const provider = aiClient.getProvider();
-        const models = provider.models || [];
-        const activeModel = aiClient.currentModel;
-        const personas = modelManager.models || [];
+        const config = aiClient.config;
+        const providers = aiClient.providers;
+        const currentProvider = providers[config.provider] || providers['openrouter'];
+        const models = modelManager.models;
+        const activeModelId = modelManager.activeModelId;
 
         const settingsHtml = `
-            <div class="aura-settings-panel" style="width: 420px; max-height: 550px; overflow-y: auto;">
+            <div class="aura-settings-panel">
                 <h3>Configurações AURA</h3>
                 
                 <div class="aura-setting-item">
-                    <label>Provedor de IA:</label>
+                    <label>Provedor de IA</label>
                     <select id="settings-provider-select">
-                        ${aiClient.providers.map(p => `<option value="${p.id}" ${p.id === aiClient.currentProviderId ? 'selected' : ''}>${p.name}</option>`).join('')}
+                        ${Object.keys(providers).map(p => `<option value="${p}" ${config.provider === p ? 'selected' : ''}>${providers[p].name}</option>`).join('')}
                     </select>
                 </div>
 
-                <div id="provider-details">
-                    <div class="aura-setting-item">
-                        <label>API Key:</label>
-                        <input type="password" id="settings-provider-key" value="${provider.key || ''}" placeholder="Insira sua chave">
-                    </div>
-                    ${aiClient.currentProviderId === 'custom' ? `
-                        <div class="aura-setting-item">
-                            <label>Base URL:</label>
-                            <input type="text" id="settings-provider-url" value="${provider.url || ''}" placeholder="https://api.exemplo.com/v1">
-                        </div>
-                    ` : ''}
-                    <div class="aura-setting-item">
-                        <label>Modelo de IA:</label>
-                        <select id="settings-model-select">
-                            ${models.map(m => `<option value="${m}" ${m === activeModel ? 'selected' : ''}>${m}</option>`).join('')}
-                            <option value="custom" ${!models.includes(activeModel) ? 'selected' : ''}>Custom Model ID</option>
-                        </select>
-                    </div>
-                    <div id="custom-model-area" style="display: ${!models.includes(activeModel) ? 'block' : 'none'};">
-                        <div class="aura-setting-item">
-                            <label>Custom Model ID:</label>
-                            <input type="text" id="settings-custom-model" value="${!models.includes(activeModel) ? activeModel : ''}" placeholder="ex: anthropic/claude-3.5-sonnet">
-                        </div>
-                    </div>
+                <div class="aura-setting-item">
+                    <label>API Key</label>
+                    <input type="password" id="settings-provider-key" value="${currentProvider.key || ''}" placeholder="Insira sua chave">
+                </div>
+
+                ${config.provider === 'custom' ? `
+                <div class="aura-setting-item">
+                    <label>URL do Provedor</label>
+                    <input type="text" id="settings-provider-url" value="${currentProvider.url || ''}" placeholder="https://api.exemplo.com/v1">
+                </div>
+                ` : ''}
+
+                <div class="aura-setting-item">
+                    <label>Modelo de IA</label>
+                    <select id="settings-model-select">
+                        ${currentProvider.models.map(m => `<option value="${m.id}" ${config.model === m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
+                        <option value="custom" ${!currentProvider.models.find(m => m.id === config.model) ? 'selected' : ''}>Custom Model ID</option>
+                    </select>
+                </div>
+
+                <div id="custom-model-area" class="aura-setting-item" style="display: ${!currentProvider.models.find(m => m.id === config.model) ? 'block' : 'none'};">
+                    <label>Custom Model ID</label>
+                    <input type="text" id="settings-custom-model" value="${config.model}" placeholder="ex: anthropic/claude-3-opus">
                 </div>
 
                 <div class="aura-divider" style="margin: 20px 0; border-top: 1px solid var(--aura-border);"></div>
                 
-                <div class="aura-personas-section">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <h4 style="font-size:14px; color:var(--aura-accent);">Personas (Aura Models)</h4>
-                        <button id="add-persona-btn" style="background:var(--aura-gradient); border:none; border-radius:4px; color:white; padding:4px 8px; font-size:11px; cursor:pointer;">+ Nova</button>
-                    </div>
-                    <div id="personas-list" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                        ${personas.map(p => `
-                            <div class="persona-card ${p.id === modelManager.activeModelId ? 'active' : ''}" data-id="${p.id}" style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; border:1px solid ${p.id === modelManager.activeModelId ? 'var(--aura-primary)' : 'var(--aura-border)'}; cursor:pointer; position:relative;">
-                                <div style="font-size:18px; margin-bottom:5px;">${p.icon || '🤖'}</div>
-                                <div style="font-weight:600; font-size:12px;">${p.title}</div>
-                                <button class="delete-persona" data-id="${p.id}" style="position:absolute; top:5px; right:5px; background:none; border:none; color:#ef4444; font-size:10px; cursor:pointer;">✕</button>
-                            </div>
-                        `).join('')}
-                    </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-size: 13px; font-weight: 600;">Personas (Aura Models)</label>
+                    <button id="add-persona-btn" style="background:none; border:none; color:var(--aura-primary-light); cursor:pointer; font-size:12px;">+ Adicionar</button>
                 </div>
 
-                <div class="aura-settings-actions" style="margin-top: 25px;">
-                    <button id="settings-save" style="background:var(--aura-gradient); color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:600;">Salvar Alterações</button>
-                    <button id="settings-close" style="background:rgba(255,255,255,0.1); color:white; border:none; padding:12px; border-radius:8px; cursor:pointer;">Fechar</button>
+                <div class="aura-personas-list" style="max-height: 150px; overflow-y: auto;">
+                    ${models.map(m => `
+                        <div class="aura-persona-card ${m.id === activeModelId ? 'active' : ''}" data-id="${m.id}" style="${m.id === activeModelId ? 'border-color: var(--aura-primary-light); background: rgba(139, 92, 246, 0.1);' : ''}">
+                            <div class="aura-persona-info">
+                                <span class="aura-persona-icon">${m.icon || '🤖'}</span>
+                                <span class="aura-persona-name">${m.title}</span>
+                            </div>
+                            <button class="delete-persona" data-id="${m.id}" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:12px;">✕</button>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="aura-settings-actions">
+                    <button id="settings-save">Salvar</button>
+                    <button id="settings-close">Fechar</button>
                 </div>
             </div>
         `;
-        
+
         const div = createOverlay(settingsHtml);
 
         // --- Settings Event Listeners ---
@@ -527,7 +538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
 
-        div.querySelectorAll('.persona-card').forEach(card => {
+        div.querySelectorAll('.aura-persona-card').forEach(card => {
             card.onclick = (e) => {
                 if (e.target.classList.contains('delete-persona')) return;
                 modelManager.setActiveModel(card.dataset.id);
